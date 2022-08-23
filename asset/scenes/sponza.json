@@ -1,0 +1,68 @@
+{
+    "Instances": "Sponza.gltf",
+
+    "Skybox" : {
+        "Mesh": "sphere.obj",
+        "Cubemap" : "Hexagon.dds"
+    },
+
+    "Camera":{
+        "FOVY": 60.0,
+        "Near": 0.2,
+        "Far": 300.0,
+        "Position": [0.0, 1.0, 0.0],
+        "Target": [1.0, 0.0, 0.0]
+    },
+
+    "Sun": {
+        "Direction": [0.0, -1.0, 0.0],
+        "Color": [ 1.0, 1.0, 1.0 ],
+        "Intensity":  3.0
+    },
+
+    "PointLights":[
+        {
+            "Position": [ -6.0, 2.0, 0.0 ],
+            "Color": [ 1.0, 0.0, 0.0 ],
+            "Intensity": 3.0,
+            "Near": 0.1,
+            "Range": 15.0
+        },
+
+        {
+            "Position": [ -2.0, 2.0, 0.0 ],
+            "Color": [ 0.0, 1.0, 0.0 ],
+            "Intensity": 3.0,
+            "Near": 0.1,
+            "Range": 15.0
+        },
+
+        {
+            "Position": [ 2.0, 2.0, 0.0 ],
+            "Color": [ 0.0, 0.0, 1.0 ],
+            "Intensity": 3.0,
+            "Near": 0.1,
+            "Range": 15.0
+        },
+
+        {
+            "Position": [ 6.0, 2.0, 0.0 ],
+            "Color": [ 1.0, 0.0, 1.0 ],
+            "Intensity": 3.0,
+            "Near": 0.1,
+            "Range": 15.0
+        }],
+
+    "SpotLights":[
+        {
+            "Position": [ 0.0, 8.0, 0.0 ],
+            "Color": [ 1.0, 0.0, 1.0 ],
+            "Intensity": 3.0,
+            "Direction": [ 0.0, -1.0, 0.0 ],
+            "Near": 0.1,
+            "Range": 15.0,
+            "OutterAngle": 60.0,
+            "InnerAngle": 45.0
+        }
+    ]
+}

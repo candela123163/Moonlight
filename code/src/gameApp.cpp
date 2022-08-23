@@ -1,6 +1,12 @@
+#include "stdafx.h"
 #include <WindowsX.h>
 #include "gameApp.h"
 #include "util.h"
+#include "passBase.h"
+#include "debugPass.h"
+#include "skyBoxPass.h"
+using namespace DirectX;
+using namespace std;
 
 GameApp* GameApp::mGame = nullptr;
 
@@ -79,9 +85,81 @@ bool GameApp::Initialize()
 	if (!InitDirect3D())
 		return false;
 
-	FlushCommandQueue();
+	if (!InitGraphic())
+		return false;
+
+	mScene.OnLoadOver(mGraphicContext);
+
+	PreprocessPasses();
 
 	return true;
+}
+
+void GameApp::SetDefaultRenderTarget()
+{
+	mCommandList->OMSetRenderTargets(1, get_rvalue_ptr(CurrentBackBufferView()), true, get_rvalue_ptr(DepthStencilView()));
+}
+
+LRESULT GameApp::MsgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+	switch (msg)
+	{
+		// WM_ACTIVATE is sent when the window is activated or deactivated.  
+		// We pause the game when the window is deactivated and unpause it 
+		// when it becomes active.  
+	case WM_ACTIVATE:
+		if (LOWORD(wParam) == WA_INACTIVE)
+		{
+			mAppPaused = true;
+			mTimer.Stop();
+		}
+		else
+		{
+			mAppPaused = false;
+			mTimer.Start();
+		}
+		return 0;
+
+		// WM_DESTROY is sent when the window is being destroyed.
+	case WM_DESTROY:
+		PostQuitMessage(0);
+		return 0;
+
+		// The WM_MENUCHAR message is sent when a menu is active and the user presses 
+		// a key that does not correspond to any mnemonic or accelerator key. 
+	case WM_MENUCHAR:
+		// Don't beep when we alt-enter.
+		return MAKELRESULT(0, MNC_CLOSE);
+
+		// Catch this message so to prevent the window from becoming too small.
+	case WM_GETMINMAXINFO:
+		((MINMAXINFO*)lParam)->ptMinTrackSize.x = 200;
+		((MINMAXINFO*)lParam)->ptMinTrackSize.y = 200;
+		return 0;
+
+	case WM_LBUTTONDOWN:
+	case WM_MBUTTONDOWN:
+	case WM_RBUTTONDOWN:
+		OnMouseDown(wParam, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
+		return 0;
+	case WM_LBUTTONUP:
+	case WM_MBUTTONUP:
+	case WM_RBUTTONUP:
+		OnMouseUp(wParam, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
+		return 0;
+	case WM_MOUSEMOVE:
+		OnMouseMove(wParam, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
+		return 0;
+	case WM_KEYUP:
+		if (wParam == VK_ESCAPE)
+		{
+			PostQuitMessage(0);
+		}
+		return 0;
+		
+	}
+
+	return DefWindowProc(hwnd, msg, wParam, lParam);
 }
 
 LRESULT CALLBACK
@@ -90,6 +168,36 @@ MainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	// Forward hwnd on because we can get messages (e.g., WM_CREATE)
 	// before CreateWindow returns, and thus before mhMainWnd is valid.
 	return GameApp::GetApp()->MsgProc(hwnd, msg, wParam, lParam);
+}
+
+void GameApp::OnMouseDown(WPARAM btnState, int x, int y)
+{
+	mLastMousePos.x = x;
+	mLastMousePos.y = y;
+
+	SetCapture(mhMainWnd);
+	mScene.OnMouseDown(btnState, x, y);
+}
+
+void GameApp::OnMouseUp(WPARAM btnState, int x, int y)
+{
+	ReleaseCapture();
+	mScene.OnMouseUp(btnState, x, y);
+}
+
+void GameApp::OnMouseMove(WPARAM btnState, int x, int y)
+{
+	float dx = static_cast<float>(x - mLastMousePos.x);
+	float dy = static_cast<float>(y - mLastMousePos.y);
+	mLastMousePos.x = x;
+	mLastMousePos.y = y;
+
+	mScene.OnMouseMove(btnState, x, y, dx, dy);
+}
+
+void GameApp::OnKeyboardInput()
+{
+	mScene.OnKeyboardInput(mTimer);
 }
 
 bool GameApp::InitMainWindow()
@@ -162,7 +270,27 @@ bool GameApp::InitDirect3D()
 	CreateSwapChain();
 	CreateDescriptorHeap();
 	CreateDefaultRtvDsv();
+	CreateGraphicContext();
 	SetFullWindowViewPort();
+
+	return true;
+}
+
+bool GameApp::InitGraphic()
+{
+	ThrowIfFailed(mCommandList->Reset(CurrentFrameResource()->CmdListAlloc.Get(), nullptr));
+	
+	PreparePasses();
+	
+	mScene.Load(Globals::ScenePath / "sponza.json", mGraphicContext);
+
+	ThrowIfFailed(mCommandList->Close());
+	ID3D12CommandList* cmdsLists[] = { mCommandList.Get() };
+	mCommandQueue->ExecuteCommandLists(_countof(cmdsLists), cmdsLists);
+
+	FlushCommandQueue();
+	
+	return true;
 }
 
 void GameApp::CreateCommandObjects()
@@ -215,26 +343,26 @@ void GameApp::CreateFrameResource()
 {
 	for (int i = 0; i < mFrameCount; i++)
 	{
-		mFrameResources.push_back(std::make_unique<FrameResource>(md3dDevice.Get()));
+		mFrameResources.push_back(std::make_unique<FrameResources>(md3dDevice.Get()));
 	}
 }
 
 void GameApp::CreateDescriptorHeap()
 {
-	mDescriptorHeap = std::make_unique<DescriptorHeap>();
+	mDescriptorHeap = std::make_unique<DescriptorHeap>(md3dDevice.Get());
 }
 
 void GameApp::CreateDefaultRtvDsv()
 {
-	auto [rtvCpuHandle, _] = mDescriptorHeap->GetNextnRtvDescriptor(mSwapChainBufferCount);
-	mRtvDescriptorCPUStart = rtvCpuHandle;
-	mRtvDescriptorSize = mDescriptorHeap->GetRtvDescriptorSize();
+	auto descriptorData = mDescriptorHeap->GetNextnRtvDescriptor(mSwapChainBufferCount);
+	mRtvDescriptorCPUStart = descriptorData.CPUHandle;
+	mRtvDescriptorSize = descriptorData.IncrementSize;
 
 	for (UINT i = 0; i < mSwapChainBufferCount; i++)
 	{
 		ThrowIfFailed(mSwapChain->GetBuffer(i, IID_PPV_ARGS(&mSwapChainBuffer[i])));
-		md3dDevice->CreateRenderTargetView(mSwapChainBuffer[i].Get(), nullptr, rtvCpuHandle);
-		rtvCpuHandle.Offset(1, mRtvDescriptorSize);
+		md3dDevice->CreateRenderTargetView(mSwapChainBuffer[i].Get(), nullptr, descriptorData.CPUHandle);
+		descriptorData.CPUHandle.Offset(1, mRtvDescriptorSize);
 	}
 
 	// Create the depth/stencil buffer and view.
@@ -256,7 +384,7 @@ void GameApp::CreateDefaultRtvDsv()
 	optClear.DepthStencil.Depth = 1.0f;
 	optClear.DepthStencil.Stencil = 0;
 	ThrowIfFailed(md3dDevice->CreateCommittedResource(
-		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+		get_rvalue_ptr(CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT)),
 		D3D12_HEAP_FLAG_NONE,
 		&depthStencilDesc,
 		D3D12_RESOURCE_STATE_DEPTH_WRITE,
@@ -264,16 +392,16 @@ void GameApp::CreateDefaultRtvDsv()
 		IID_PPV_ARGS(mDepthStencilBuffer.GetAddressOf())));
 
 	// Create descriptor to mip level 0 of entire resource using the format of the resource.
-	auto [dsvCpuHandle, _] = mDescriptorHeap->GetNextnDsvDescriptor(1);
-	mDsvDescriptorCPUStart = dsvCpuHandle;
-	mDsvDescriptorSize = mDescriptorHeap->GetDsvDescriptorSize();
+	descriptorData = mDescriptorHeap->GetNextnDsvDescriptor(1);
+	mDsvDescriptorCPUStart = descriptorData.CPUHandle;
+	mDsvDescriptorSize = descriptorData.IncrementSize;
 
 	D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc;
 	dsvDesc.Flags = D3D12_DSV_FLAG_NONE;
 	dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
 	dsvDesc.Format = mDepthStencilFormat;
 	dsvDesc.Texture2D.MipSlice = 0;
-	md3dDevice->CreateDepthStencilView(mDepthStencilBuffer.Get(), &dsvDesc, dsvCpuHandle);
+	md3dDevice->CreateDepthStencilView(mDepthStencilBuffer.Get(), &dsvDesc, mDsvDescriptorCPUStart);
 }
 
 void GameApp::SetFullWindowViewPort()
@@ -288,7 +416,64 @@ void GameApp::SetFullWindowViewPort()
 	mScissorRect = { 0, 0, mClientWidth, mClientHeight };
 }
 
-FrameResource* GameApp::CurrentFrameResource() const
+void GameApp::CreateGraphicContext()
+{
+	mGraphicContext = {
+		md3dDevice.Get(),
+		mCommandList.Get(),
+		mCommandQueue.Get(),
+		&mTimer,
+		mDescriptorHeap.get(),
+		CurrentFrameResource(),
+		mBackBufferFormat,
+		mDepthStencilFormat,
+		mClientWidth,
+		mClientHeight,
+
+		&mScene
+	};
+}
+
+void GameApp::UpdateGraphicContext()
+{
+	// just update current frame resource
+	mGraphicContext.frameResource = CurrentFrameResource();
+}
+
+void GameApp::PreparePasses()
+{
+	// load pass
+	mPasses.push_back(make_unique<DebugPass>());
+	mPasses.push_back(make_unique<SkyboxPass>());
+
+	for (auto& pass : mPasses) {
+		pass->PreparePass(mGraphicContext);
+	}
+}
+
+void GameApp::DrawPasses()
+{
+	for (auto& pass : mPasses) {
+		pass->DrawPass(mGraphicContext);
+	}
+}
+
+void GameApp::PreprocessPasses()
+{
+	for (auto& pass : mPasses) {
+		pass->PreprocessPass(mGraphicContext);
+	}
+}
+
+void GameApp::ReleasePasses()
+{
+	for (auto& pass : mPasses) {
+		pass->ReleasePass(mGraphicContext);
+	}
+	mPasses.clear();
+}
+
+FrameResources* GameApp::CurrentFrameResource() const
 {
 	return mFrameResources[mCurrFrameIndex].get();
 }
@@ -321,7 +506,7 @@ void GameApp::FlushCommandQueue()
 	// Wait until the GPU has completed commands up to this fence point.
 	if (mFence->GetCompletedValue() < mCurrentFence)
 	{
-		HANDLE eventHandle = CreateEventEx(nullptr, false, false, EVENT_ALL_ACCESS);
+		HANDLE eventHandle = CreateEvent(nullptr, FALSE, FALSE, nullptr);
 
 		// Fire event when GPU hits current fence.  
 		ThrowIfFailed(mFence->SetEventOnCompletion(mCurrentFence, eventHandle));
@@ -334,10 +519,10 @@ void GameApp::FlushCommandQueue()
 
 void GameApp::WaitForPreFrameComplete()
 {
-	FrameResource* currentFrameResource = CurrentFrameResource();
+	FrameResources* currentFrameResource = CurrentFrameResource();
 	if (mFence->GetCompletedValue() < currentFrameResource->Fence)
 	{
-		HANDLE eventHandle = CreateEventEx(nullptr, false, false, EVENT_ALL_ACCESS);
+		HANDLE eventHandle = CreateEvent(nullptr, FALSE, FALSE, nullptr);
 		ThrowIfFailed(mFence->SetEventOnCompletion(currentFrameResource->Fence, eventHandle));
 		WaitForSingleObject(eventHandle, INFINITE);
 		CloseHandle(eventHandle);
@@ -346,7 +531,6 @@ void GameApp::WaitForPreFrameComplete()
 
 void GameApp::FlipFrame()
 {	
-	ThrowIfFailed(mSwapChain->Present(0, 0));
 	++mCurrentFence;
 	CurrentFrameResource()->Fence = mCurrentFence;
 	ThrowIfFailed(mCommandQueue->Signal(mFence.Get(), mCurrentFence));
@@ -357,10 +541,40 @@ void GameApp::FlipFrame()
 
 void GameApp::Update()
 {
+	OnKeyboardInput();
 	WaitForPreFrameComplete();
+
+	UpdateGraphicContext();
+	mScene.OnUpdate(mGraphicContext);
 }
 
 void GameApp::Draw()
 {
+	ThrowIfFailed(CurrentFrameResource()->CmdListAlloc->Reset());
+	ThrowIfFailed(mCommandList->Reset(CurrentFrameResource()->CmdListAlloc.Get(), nullptr));
+
+	ID3D12DescriptorHeap* descriptorHeaps[] = { mDescriptorHeap->GetSrvHeap()};
+	mCommandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
+
+	mCommandList->RSSetViewports(1, &mScreenViewport);
+	mCommandList->RSSetScissorRects(1, &mScissorRect);
+
+	mCommandList->ResourceBarrier(1, get_rvalue_ptr(CD3DX12_RESOURCE_BARRIER::Transition(CurrentBackBuffer(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET)));
+	mCommandList->ClearRenderTargetView(CurrentBackBufferView(), DirectX::Colors::LightSteelBlue, 0, nullptr);
+	mCommandList->ClearDepthStencilView(DepthStencilView(), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
+
+	mCommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+	DrawPasses();
+
+	mCommandList->ResourceBarrier(1, get_rvalue_ptr(CD3DX12_RESOURCE_BARRIER::Transition(CurrentBackBuffer(),
+		D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT)));
+	
+	ThrowIfFailed(mCommandList->Close());
+	ID3D12CommandList* cmdsLists[] = { mCommandList.Get() };
+	mCommandQueue->ExecuteCommandLists(_countof(cmdsLists), cmdsLists);
+
+	ThrowIfFailed(mSwapChain->Present(0, 0));
+
 	FlipFrame();
 }

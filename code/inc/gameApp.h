@@ -1,9 +1,12 @@
 #pragma once
 #include "stdafx.h"
 #include "descriptor.h"
-#include "resourceContainer.h"
 #include "frameResource.h"
+#include "globals.h"
+#include "scene.h"
 using Microsoft::WRL::ComPtr;
+
+class PassBase;
 
 class GameApp
 {
@@ -24,6 +27,9 @@ public:
     bool Initialize();
     LRESULT MsgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
+public:
+    void SetDefaultRenderTarget();
+
 private:
     // handle mouse & keyboard input
     void OnMouseDown(WPARAM btnState, int x, int y);
@@ -34,18 +40,27 @@ private:
     // init window & d3d
     bool InitMainWindow();
     bool InitDirect3D();
+    bool InitGraphic();
+
     void CreateCommandObjects();
     void CreateSwapChain();
     void CreateFrameResource();
     void CreateDescriptorHeap();
     void CreateDefaultRtvDsv();
     void SetFullWindowViewPort();
+    void CreateGraphicContext();
+    void UpdateGraphicContext();
+    
+    void PreparePasses();
+    void PreprocessPasses();
+    void DrawPasses();
+    void ReleasePasses();
 
     void FlushCommandQueue();
     void WaitForPreFrameComplete();
     void FlipFrame();
 
-    FrameResource* CurrentFrameResource() const;
+    FrameResources* CurrentFrameResource() const;
     ID3D12Resource* CurrentBackBuffer() const;
     D3D12_CPU_DESCRIPTOR_HANDLE CurrentBackBufferView() const;
     D3D12_CPU_DESCRIPTOR_HANDLE DepthStencilView() const;
@@ -73,13 +88,13 @@ private:
     ComPtr<ID3D12GraphicsCommandList> mCommandList;
 
     std::unique_ptr<DescriptorHeap> mDescriptorHeap;
-    std::unique_ptr<ResourceContainer> mResourceContainer;
+    
 
-    static const int mSwapChainBufferCount = 2;
+    static const int mSwapChainBufferCount = SWAP_CHAIN_COUNT;
     int mCurrBackBufferIndex = 0;
     ComPtr<ID3D12Resource> mSwapChainBuffer[mSwapChainBufferCount];
     ComPtr<ID3D12Resource> mDepthStencilBuffer;
-    D3D12_CPU_DESCRIPTOR_HANDLE mRtvDescriptorCPUStart, mDsvDescriptorCPUStart;
+    CD3DX12_CPU_DESCRIPTOR_HANDLE mRtvDescriptorCPUStart, mDsvDescriptorCPUStart;
     UINT mRtvDescriptorSize = 0, mDsvDescriptorSize = 0;
 
     D3D12_VIEWPORT mScreenViewport;
@@ -88,12 +103,19 @@ private:
     DXGI_FORMAT mBackBufferFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
     DXGI_FORMAT mDepthStencilFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
 
-    std::vector<std::unique_ptr<FrameResource>> mFrameResources;
+    std::vector<std::unique_ptr<FrameResources>> mFrameResources;
     int mCurrFrameIndex = 0;
-    static const int mFrameCount = 3;
+    static const int mFrameCount = FRAME_COUNT;
 
     POINT mLastMousePos;
 
     int mClientWidth = WINDOW_WIDTH;
     int mClientHeight = WINDOW_HEIGHT;
+
+    GraphicContext mGraphicContext;
+
+    Scene mScene;
+
+    // pass
+    std::vector<std::unique_ptr<PassBase>> mPasses;
 };

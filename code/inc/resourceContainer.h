@@ -1,8 +1,31 @@
 #pragma once
-#include <stdafx.h>
 
+
+template<typename T>
 class ResourceContainer
 {
 public:
-    const static std::array<const CD3DX12_STATIC_SAMPLER_DESC, 7> StaticSamplers;
+    bool Contains(size_t key) const
+    {
+        return mResource.find(key) != mResource.end();
+    }
+
+    T* Get(size_t key)
+    {
+        return mResource[key].get();
+    }
+
+    void Insert(size_t key, std::unique_ptr<T>&& resource)
+    {
+        mResource[key] = std::move(resource);
+    }
+
+    size_t Size() const
+    {
+        return mResource.size();
+    }
+
+private:
+    std::unordered_map<size_t, std::unique_ptr<T>> mResource;
 };
+

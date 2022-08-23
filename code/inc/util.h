@@ -1,12 +1,8 @@
 #pragma once
 #include "stdafx.h"
 
-inline std::wstring AnsiToWString(const std::string& str)
-{
-    WCHAR buffer[512];
-    MultiByteToWideChar(CP_ACP, 0, str.c_str(), -1, buffer, 512);
-    return std::wstring(buffer);
-}
+std::wstring AnsiToWString(const std::string& str);
+
 
 class DxException
 {
@@ -31,3 +27,98 @@ public:
     if(FAILED(hr__)) { throw DxException(hr__, L#x, wfn, __LINE__); } \
 }
 #endif
+
+
+Microsoft::WRL::ComPtr<ID3DBlob> CompileShader(
+    const std::wstring& filename,
+    const D3D_SHADER_MACRO* defines,
+    const std::string& entrypoint,
+    const std::string& target);
+
+
+bool IsKeyDown(int vKeycode);
+
+
+template<typename T>
+T* get_rvalue_ptr(T&& v)
+{
+    return &v;
+}
+
+
+Microsoft::WRL::ComPtr<ID3D12Resource> CreateDefaultBuffer(
+    ID3D12Device* device,
+    ID3D12GraphicsCommandList* cmdList,
+    const void* initData,
+    UINT64 byteSize,
+    Microsoft::WRL::ComPtr<ID3D12Resource>& uploadBuffer);
+
+
+UINT CalcConstantBufferByteSize(UINT byteSize);
+
+
+template<typename T, bool isConstant = false>
+class UploadBuffer
+{
+public:
+    UploadBuffer(ID3D12Device* device, UINT elementCount = 1):
+        mElementCount(elementCount)
+    {
+       
+        if constexpr(isConstant)
+            mElementByteSize = CalcConstantBufferByteSize(sizeof(T));
+        else
+            mElementByteSize = sizeof(T);
+
+        ThrowIfFailed(device->CreateCommittedResource(
+            get_rvalue_ptr(CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD)),
+            D3D12_HEAP_FLAG_NONE,
+            get_rvalue_ptr(CD3DX12_RESOURCE_DESC::Buffer(mElementByteSize * elementCount)),
+            D3D12_RESOURCE_STATE_GENERIC_READ,
+            nullptr,
+            IID_PPV_ARGS(mUploadBuffer.GetAddressOf())));
+
+        ThrowIfFailed(mUploadBuffer->Map(0, nullptr, reinterpret_cast<void**>(&mMappedData)));
+    }
+
+    UploadBuffer(const UploadBuffer& rhs) = delete;
+    UploadBuffer& operator=(const UploadBuffer& rhs) = delete;
+    ~UploadBuffer()
+    {
+        if (mUploadBuffer != nullptr)
+            mUploadBuffer->Unmap(0, nullptr);
+
+        mMappedData = nullptr;
+    }
+
+    ID3D12Resource* GetResource() const
+    {
+        return mUploadBuffer.Get();
+    }
+
+    D3D12_GPU_VIRTUAL_ADDRESS GetElementGPUAddress(UINT index = 0) 
+    {
+        assert(index < mElementCount);
+        return mUploadBuffer->GetGPUVirtualAddress() + index * mElementByteSize;
+    }
+
+    void CopyData(const T& data, UINT index = 0)
+    {
+        assert(index < mElementCount);
+        memcpy(&mMappedData[index * mElementByteSize], &data, sizeof(T));
+    }
+
+
+private:
+    Microsoft::WRL::ComPtr<ID3D12Resource> mUploadBuffer;
+    BYTE* mMappedData = nullptr;
+
+    UINT mElementByteSize = 0;
+    UINT mElementCount = 0;
+};
+
+
+float DegreeToRadians(float degree);
+
+float RadiansToDegree(float radians);
+

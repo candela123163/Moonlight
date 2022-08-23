@@ -1,15 +1,29 @@
 #pragma once
-#include "stdafx.h"
 
+
+struct ID3D12Device;
+struct ID3D12GraphicsCommandList;
+struct ID3D12CommandQueue;
+class Timer;
 class DescriptorHeap;
-class ResourceContainer;
-struct FrameResource;
+struct FrameResources;
+enum DXGI_FORMAT;
+class Scene;
+
 
 struct GraphicContext
 {
     ID3D12Device* device;
     ID3D12GraphicsCommandList* commandList;
+    ID3D12CommandQueue* commandQueue;
+    Timer* timer;
     DescriptorHeap* descriptorHeap;
-    ResourceContainer* resourceContainer;
-    FrameResource* frameResource;
+    FrameResources* frameResource;
+    DXGI_FORMAT backBufferFormat;
+    DXGI_FORMAT depthStencilFormat;
+    int screenWidth;
+    int screenHeight;
+
+    Scene* scene;
 };
+
