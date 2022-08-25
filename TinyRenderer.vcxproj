@@ -152,6 +152,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Use</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="code\src\globals.cpp" />
+    <ClCompile Include="code\src\IBLPreprocess.cpp" />
     <ClCompile Include="code\src\main.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Use</PrecompiledHeader>
     </ClCompile>
@@ -159,6 +160,7 @@
     <ClCompile Include="code\src\mesh.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Use</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="code\src\opaqueLitPass.cpp" />
     <ClCompile Include="code\src\scene.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Use</PrecompiledHeader>
     </ClCompile>
@@ -183,9 +185,11 @@
     <ClInclude Include="code\inc\gameApp.h" />
     <ClInclude Include="code\inc\globals.h" />
     <ClInclude Include="code\inc\graphicContext.h" />
+    <ClInclude Include="code\inc\IBLPreprocessPass.h" />
     <ClInclude Include="code\inc\light.h" />
     <ClInclude Include="code\inc\material.h" />
     <ClInclude Include="code\inc\mesh.h" />
+    <ClInclude Include="code\inc\opaqueLitPass.h" />
     <ClInclude Include="code\inc\passBase.h" />
     <ClInclude Include="code\inc\resourceContainer.h" />
     <ClInclude Include="code\inc\scene.h" />

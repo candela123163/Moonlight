@@ -20,9 +20,9 @@ void Material::UpdateConstant(const GraphicContext& context)
     materialConstant.MetallicFactor = metallicFactor;
     materialConstant.RoughnessFactor = roughnessFactor;
 
-    materialConstant.AlbedoMapIndex = albedoMap->GetSRVHeapIndex();
-    materialConstant.NormalMapIndex = normalMap->GetSRVHeapIndex();
-    materialConstant.MetalRoughMapIndex = metalRoughnessMap->GetSRVHeapIndex();
+    materialConstant.AlbedoMapIndex = albedoMap->GetSrvDescriptorData().HeapIndex;
+    materialConstant.NormalMapIndex = normalMap->GetSrvDescriptorData().HeapIndex;
+    materialConstant.MetalRoughMapIndex = metalRoughnessMap->GetSrvDescriptorData().HeapIndex;
 
     context.frameResource->ConstantMaterial->CopyData(materialConstant, materialID);
 }
@@ -83,7 +83,7 @@ Material* Material::GetOrLoad(int materiaIndex, const aiScene* scene, const Grap
         material->Get(AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLIC_FACTOR, metalFactor);
         material->Get(AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_ROUGHNESS_FACTOR, roughFactor);
 
-        Globals::MaterialContainer.Insert(
+        return Globals::MaterialContainer.Insert(
             materiaIndex,
             make_unique<Material>(
                 materiaIndex,

@@ -12,12 +12,14 @@ public:
 
     T* Get(size_t key)
     {
-        return mResource[key].get();
+        auto it = mResource.find(key);
+        return it != mResource.end() ? it->second.get() : nullptr;
     }
 
-    void Insert(size_t key, std::unique_ptr<T>&& resource)
+    T* Insert(size_t key, std::unique_ptr<T>&& resource)
     {
-        mResource[key] = std::move(resource);
+        auto reslut = mResource.insert({ key, std::move(resource) });
+        return reslut.second ? reslut.first->second.get() : nullptr;
     }
 
     size_t Size() const

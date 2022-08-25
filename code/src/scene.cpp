@@ -145,7 +145,7 @@ bool Scene::LoadLight(const nlohmann::json& sceneConfig, const GraphicContext& c
     for (size_t i = 0; i < MAX_CASCADE_COUNT; i++)
     {
         mDirectionalLight.ShadowMaps[i] = make_unique<RenderTexture>(
-            context.device,
+            context.device, context.descriptorHeap,
             DIRECTION_LIGHT_SHADOWMAP_RESOLUTION, DIRECTION_LIGHT_SHADOWMAP_RESOLUTION,
             1, 1, TextureDimension::Tex2D,
             RenderTextureUsage::DepthBuffer, DXGI_FORMAT_D32_FLOAT
@@ -182,7 +182,7 @@ bool Scene::LoadLight(const nlohmann::json& sceneConfig, const GraphicContext& c
         pointLight.Range = static_cast<float>(currLightConfig["Range"]);
 
         pointLight.ShadowMap = make_unique<RenderTexture>(
-            context.device,
+            context.device, context.descriptorHeap,
             POINT_LIGHT_SHADOWMAP_RESOLUTION, POINT_LIGHT_SHADOWMAP_RESOLUTION,
             6, 1, TextureDimension::CubeMap,
             RenderTextureUsage::DepthBuffer, DXGI_FORMAT_D32_FLOAT
@@ -230,7 +230,7 @@ bool Scene::LoadLight(const nlohmann::json& sceneConfig, const GraphicContext& c
         spotLight.InnerAngle = DegreeToRadians(static_cast<float>(currLightConfig["InnerAngle"]));
 
         spotLight.ShadowMap = make_unique<RenderTexture>(
-            context.device,
+            context.device, context.descriptorHeap,
             SPOT_LIGHT_SHADOWMAP_RESOLUTION, SPOT_LIGHT_SHADOWMAP_RESOLUTION,
             1, 1, TextureDimension::Tex2D,
             RenderTextureUsage::DepthBuffer, DXGI_FORMAT_D32_FLOAT

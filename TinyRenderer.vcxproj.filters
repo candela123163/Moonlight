@@ -63,6 +63,12 @@
     <ClCompile Include="code\src\skyBoxPass.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="code\src\opaqueLitPass.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="code\src\IBLPreprocess.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="code\inc\gameApp.h">
@@ -120,6 +126,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="code\inc\skyBoxPass.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="code\inc\opaqueLitPass.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="code\inc\IBLPreprocessPass.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -1,8 +1,7 @@
 #pragma once
 #include "stdafx.h"
+#include "descriptor.h"
 
-struct DescriptorData;
-class DescriptorHeap;
 
 // ----------- ITexture -------------
 enum class TextureDimension 
@@ -24,9 +23,14 @@ public:
     ID3D12Resource* GetResource() const { return mTexture.Get(); }
     void BindSRV(ID3D12Device* device, DescriptorHeap* descriptorHeap);
     void BindSRV(ID3D12Device* device, const DescriptorData& descriptorData);
-    UINT GetSRVHeapIndex() const { return mSRVHeapIndex; }
-    CD3DX12_GPU_DESCRIPTOR_HANDLE GetGPUDescriptor() const { return mGpuDescriptor; }
+    const DescriptorData& GetSrvDescriptorData() const { return mSrvDescriptorData; }
 
+    UINT GetWidth() const { return mWidth; }
+    UINT GetHeight() const { return mHeight; }
+    UINT GetDepthCount() const { return mDepthCount; }
+    UINT GetMipCount() const { return mMipCount; }
+    TextureDimension GetDimension() const { return mDimension; }
+        
 protected:
     virtual void GetSRVDes(D3D12_SHADER_RESOURCE_VIEW_DESC& outDesc) = 0;
 
@@ -35,18 +39,16 @@ protected:
     UINT mWidth = 0, mHeight = 0, mDepthCount = 1, mMipCount = 1;
     TextureDimension mDimension = TextureDimension::Tex2D;
     DXGI_FORMAT mFormat = DXGI_FORMAT_UNKNOWN;
-    UINT mSRVHeapIndex = 0;
-    CD3DX12_GPU_DESCRIPTOR_HANDLE mGpuDescriptor;
+    DescriptorData mSrvDescriptorData;
 };
 
 
 // ----------- Texture -------------
-
 class Texture final : public ITexture
 {
 public:
     Texture(ID3D12Device* device, 
-        DescriptorHeap* srvHeap,
+        DescriptorHeap* descriptorHeap,
         ID3D12CommandQueue* commandQueue,
         const std::filesystem::path& filePath);
 
@@ -74,7 +76,7 @@ enum class RenderTextureState
 class RenderTexture final : public ITexture
 {
 public:
-    RenderTexture(ID3D12Device* device,
+    RenderTexture(ID3D12Device* device, DescriptorHeap* descriptorHeap,
         UINT width, UINT height,
         UINT depthCount, UINT mipCount, TextureDimension dimension,
         RenderTextureUsage usage, DXGI_FORMAT format,
@@ -84,9 +86,17 @@ public:
         D3D12_CPU_DESCRIPTOR_HANDLE descriptor,
         UINT depthSlice = 0, UINT mipLevel = 0);
 
+    void BindRTV(ID3D12Device* device, DescriptorHeap* descriptorHeap);
+
     void TransitionTo(ID3D12GraphicsCommandList* commandList, RenderTextureState targetState);
 
     void SetViewPort(ID3D12GraphicsCommandList* commandList, UINT mipLevel = 0);
+
+    void SetAsRenderTarget(ID3D12GraphicsCommandList* commandList,
+        UINT depthSlice, UINT mipLevel,
+        UINT otherRTVNum = 0, D3D12_CPU_DESCRIPTOR_HANDLE* otherRTVHandles = nullptr,
+        D3D12_CPU_DESCRIPTOR_HANDLE* otherDSVHandles = nullptr
+    );
 
 private:
     void GetSRVDes(D3D12_SHADER_RESOURCE_VIEW_DESC& outDesc) override;
@@ -95,4 +105,5 @@ private:
 private:
     RenderTextureState mCurrState;
     RenderTextureUsage mUsage;
+    DescriptorData mRtvDescriptorData;
 };

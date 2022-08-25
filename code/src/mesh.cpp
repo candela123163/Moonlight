@@ -69,8 +69,16 @@ Mesh* Mesh::GetOrLoad(int meshIndex, const aiScene* scene, int globalMeshIndex, 
             }
         }
 
-        Globals::MeshContainer.Insert(globalMeshIndex, make_unique<Mesh>(context, vertices, indices));
+        return Globals::MeshContainer.Insert(globalMeshIndex, make_unique<Mesh>(context, vertices, indices));
     }
 
     return Globals::MeshContainer.Get(globalMeshIndex);
+}
+
+void Mesh::Draw(ID3D12GraphicsCommandList* commandList)
+{
+    commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    commandList->IASetVertexBuffers(0, 1, get_rvalue_ptr(VertexBufferView()));
+    commandList->IASetIndexBuffer(get_rvalue_ptr(IndexBufferView()));
+    commandList->DrawIndexedInstanced(IndexCount(), 1, 0, 0, 0);
 }

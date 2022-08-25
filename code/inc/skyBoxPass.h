@@ -10,11 +10,7 @@ public:
     virtual void PreprocessPass(const GraphicContext& context) override;
     virtual void DrawPass(const GraphicContext& context) override;
     virtual void ReleasePass(const GraphicContext& context) override;
-
 private:
-    ComPtr<ID3D12RootSignature> mSignature = nullptr;
-    ComPtr<ID3D12PipelineState> mPSO = nullptr;
-
     enum class RootSignatureParam
     {
         CameraConstant = 0,
@@ -22,4 +18,8 @@ private:
 
         COUNT = 2
     };
+
+private:
+    ComPtr<ID3D12RootSignature> mSignature = nullptr;
+    ComPtr<ID3D12PipelineState> mPSO = nullptr;
 };

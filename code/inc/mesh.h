@@ -51,6 +51,7 @@ public:
     DirectX::BoundingBox BoundingBox() const { return mBoundingBox; }
 
     static Mesh* GetOrLoad(int meshID, const aiScene* scene, int globalMeshIndex, const GraphicContext& context);
+    void Draw(ID3D12GraphicsCommandList* commandList);
 
 private:
     ComPtr<ID3D12Resource> mVertexBuffer = nullptr;

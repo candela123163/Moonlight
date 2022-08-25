@@ -5,6 +5,8 @@
 #include "passBase.h"
 #include "debugPass.h"
 #include "skyBoxPass.h"
+#include "opaqueLitPass.h"
+#include "IBLPreprocessPass.h"
 using namespace DirectX;
 using namespace std;
 
@@ -97,6 +99,9 @@ bool GameApp::Initialize()
 
 void GameApp::SetDefaultRenderTarget()
 {
+	mCommandList->RSSetViewports(1, &mScreenViewport);
+	mCommandList->RSSetScissorRects(1, &mScissorRect);
+
 	mCommandList->OMSetRenderTargets(1, get_rvalue_ptr(CurrentBackBufferView()), true, get_rvalue_ptr(DepthStencilView()));
 }
 
@@ -443,8 +448,10 @@ void GameApp::UpdateGraphicContext()
 void GameApp::PreparePasses()
 {
 	// load pass
-	mPasses.push_back(make_unique<DebugPass>());
+	mPasses.push_back(make_unique<IBLPreprocessPass>());
+	mPasses.push_back(make_unique<OpaqueLitPass>());
 	mPasses.push_back(make_unique<SkyboxPass>());
+	mPasses.push_back(make_unique<DebugPass>());
 
 	for (auto& pass : mPasses) {
 		pass->PreparePass(mGraphicContext);
@@ -460,9 +467,18 @@ void GameApp::DrawPasses()
 
 void GameApp::PreprocessPasses()
 {
+	ThrowIfFailed(CurrentFrameResource()->CmdListAlloc->Reset());
+	ThrowIfFailed(mCommandList->Reset(CurrentFrameResource()->CmdListAlloc.Get(), nullptr));
+
 	for (auto& pass : mPasses) {
 		pass->PreprocessPass(mGraphicContext);
 	}
+
+	ThrowIfFailed(mCommandList->Close());
+	ID3D12CommandList* cmdsLists[] = { mCommandList.Get() };
+	mCommandQueue->ExecuteCommandLists(_countof(cmdsLists), cmdsLists);
+
+	FlushCommandQueue();
 }
 
 void GameApp::ReleasePasses()
@@ -556,14 +572,9 @@ void GameApp::Draw()
 	ID3D12DescriptorHeap* descriptorHeaps[] = { mDescriptorHeap->GetSrvHeap()};
 	mCommandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
 
-	mCommandList->RSSetViewports(1, &mScreenViewport);
-	mCommandList->RSSetScissorRects(1, &mScissorRect);
-
 	mCommandList->ResourceBarrier(1, get_rvalue_ptr(CD3DX12_RESOURCE_BARRIER::Transition(CurrentBackBuffer(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET)));
 	mCommandList->ClearRenderTargetView(CurrentBackBufferView(), DirectX::Colors::LightSteelBlue, 0, nullptr);
 	mCommandList->ClearDepthStencilView(DepthStencilView(), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
-
-	mCommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 	DrawPasses();
 

@@ -15,14 +15,4 @@ private:
     ComPtr<ID3D12RootSignature> mSignature = nullptr;
     ComPtr<ID3D12PipelineState> mPSO = nullptr;
 
-    enum class RootSignatureParam
-    {
-        ObjectConstant = 0,
-        MaterialConstant = 1,
-        CameraConstant = 2,
-        LightConstant = 3,
-        Texture2DTable = 4,
-
-        COUNT = 5
-    };
 };

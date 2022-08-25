@@ -61,6 +61,22 @@ float GGX_D(float3 n, float3 h, float roughness)
     float t = (alpha2 - 1.0f) * cos2Theta + 1.0f;
     return alpha2 / (PI * t * t);
 }
+
+float3 GGX_Sample(float2 Xi, float roughness)
+{
+    float alpha = roughness * roughness;
+    float phi = TWO_PI * Xi.x;
+    float cosTheta = sqrt((1.0f - Xi.y) / (1.0f + (alpha * alpha - 1.0f) * Xi.y));
+    float sinTheta = 1.0f - cosTheta * cosTheta;
+    
+    float3 h = float3(
+        cos(phi) * sinTheta,
+        sin(phi) * sinTheta,
+        cosTheta
+    );
+    return h;
+}
+
 // ----------------------------------------------------------
 
 // ---------------------------- G ---------------------------

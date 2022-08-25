@@ -122,3 +122,6 @@ float DegreeToRadians(float degree);
 
 float RadiansToDegree(float radians);
 
+DirectX::FXMMATRIX GenerateCubeProjectMatrix(float fovY, float aspect, float zNear, float zFar);
+
+std::array<DirectX::FXMMATRIX, 6> GenerateCubeViewMatrices();

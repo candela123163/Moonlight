@@ -55,7 +55,6 @@ float4 ps(VertexOut pin) : SV_TARGET
     {
         normalW = pin.normalW;
     }
-    normalW = normalize(normalW);
 
     Surface surface;
     surface.position = pin.posW;
@@ -69,7 +68,8 @@ float4 ps(VertexOut pin) : SV_TARGET
     surface.viewDir = normalize(_EyePosW.xyz - pin.posW);
     
     float3 radiance = 0.0f;
-      
+    
+    // direct Light
     radiance += Shading(surface, GetSun());
     
     for (int i = 0; i < GetPointLightCount(); i++)
@@ -81,6 +81,9 @@ float4 ps(VertexOut pin) : SV_TARGET
     {
         radiance += Shading(surface, GetSpotLight(j, surface));
     }
+    
+    // indirect Light by image
+    radiance += EnvShading(surface);
 
     return float4(radiance, 1.0f);
 }

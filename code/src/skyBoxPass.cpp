@@ -84,12 +84,9 @@ void SkyboxPass::DrawPass(const GraphicContext& context)
     const SkyBox& skyBox = context.scene->GetSkybox();
 
     context.commandList->SetGraphicsRootConstantBufferView((int)RootSignatureParam::CameraConstant, context.frameResource->ConstantCamera->GetElementGPUAddress());
-    context.commandList->SetGraphicsRootDescriptorTable((int)RootSignatureParam::Texture2DTable, skyBox.texture->GetGPUDescriptor());
+    context.commandList->SetGraphicsRootDescriptorTable((int)RootSignatureParam::Texture2DTable, skyBox.texture->GetSrvDescriptorData().GPUHandle);
 
-    
-    context.commandList->IASetVertexBuffers(0, 1, get_rvalue_ptr(skyBox.mesh->VertexBufferView()));
-    context.commandList->IASetIndexBuffer(get_rvalue_ptr(skyBox.mesh->IndexBufferView()));
-    context.commandList->DrawIndexedInstanced(skyBox.mesh->IndexCount(), 1, 0, 0, 0);
+    skyBox.mesh->Draw(context.commandList);
 }
 
 void SkyboxPass::ReleasePass(const GraphicContext& context)

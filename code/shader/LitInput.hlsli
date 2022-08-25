@@ -19,6 +19,15 @@ DEFINE_OBJ_CONSTANT(b0)
 DEFINE_MATERIAL_CONSTANT(b1)
 DEFINE_CAMERA_CONSTANT(b2)
 DEFINE_LIGHT_CONSTANT(b3)
+
+cbuffer IBLConstant : register(b4)
+{
+    int _IrradianceMapIndex;
+    int _PrefilterMapIndex;
+    int _BRDFLUTIndex;
+    int _PrefilterMapMipCount;
+}
+
 // ---------------------------------------------------------------
 
 
@@ -53,8 +62,17 @@ bool NormalMapped()
 
 float2 GetEnvSpecularBRDFFactor(float2 uv)
 {
-    return float2(0.0f, 0.0f);
+    return _2DMaps[_BRDFLUTIndex].Sample(_SamplerLinearClamp, uv).xy;
 }
 
+float3 GetEnvIrradiance(float3 dir)
+{
+    return _CubeMaps[_IrradianceMapIndex].Sample(_SamplerLinearClamp, dir).rgb;
+}
+
+float3 GetEnvPrefilteredColor(float3 dir, float roughness)
+{
+    return _CubeMaps[_PrefilterMapIndex].SampleLevel(_SamplerLinearClamp, dir, roughness * _PrefilterMapMipCount);
+}
 // ---------------------------------------------------------------
 #endif

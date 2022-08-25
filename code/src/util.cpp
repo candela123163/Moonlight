@@ -3,6 +3,7 @@
 #include <comdef.h>
 using Microsoft::WRL::ComPtr;
 using namespace std;
+using namespace DirectX;
 
 std::wstring AnsiToWString(const std::string& str)
 {
@@ -118,4 +119,41 @@ float DegreeToRadians(float degree)
 float RadiansToDegree(float radians)
 {
     return radians * 180.0 * M_1_PI;
+}
+
+FXMMATRIX GenerateCubeProjectMatrix(float fovY, float aspect, float zNear, float zFar)
+{
+    return XMMatrixPerspectiveFovLH(fovY, aspect, zNear, zFar);
+}
+
+array<FXMMATRIX, 6> GenerateCubeViewMatrices()
+{
+    static FXMVECTOR pos = XMLoadFloat3(get_rvalue_ptr(XMFLOAT3(0.0, 0.0, 0.0)));
+    static FXMVECTOR looks[6] = {
+        XMLoadFloat3(get_rvalue_ptr(XMFLOAT3(1.0, 0.0, 0.0))),  // +X
+        XMLoadFloat3(get_rvalue_ptr(XMFLOAT3(-1.0, 0.0, 0.0))), // -X
+        XMLoadFloat3(get_rvalue_ptr(XMFLOAT3(0.0, 1.0, 0.0))),  // +Y
+        XMLoadFloat3(get_rvalue_ptr(XMFLOAT3(0.0, -1.0, 0.0))), // -Y
+        XMLoadFloat3(get_rvalue_ptr(XMFLOAT3(0.0, 0.0, 1.0))),  // +Z
+        XMLoadFloat3(get_rvalue_ptr(XMFLOAT3(0.0, 0.0, -1.0)))  // -Z
+    };
+    static FXMVECTOR ups[6] = {
+        XMLoadFloat3(get_rvalue_ptr(XMFLOAT3(0.0, 1.0, 0.0))),  // +X
+        XMLoadFloat3(get_rvalue_ptr(XMFLOAT3(0.0, 1.0, 0.0))),  // -X
+        XMLoadFloat3(get_rvalue_ptr(XMFLOAT3(0.0, 0.0, -1.0))), // +Y
+        XMLoadFloat3(get_rvalue_ptr(XMFLOAT3(0.0, 0.0, 1.0))),  // -Y
+        XMLoadFloat3(get_rvalue_ptr(XMFLOAT3(0.0, 1.0, 0.0))),  // +Z
+        XMLoadFloat3(get_rvalue_ptr(XMFLOAT3(0.0, 1.0, 0.0)))   // -Z
+    };
+
+    static array<FXMMATRIX, 6> views = {
+        XMMatrixLookToLH(pos, looks[0], ups[0]),
+        XMMatrixLookToLH(pos, looks[1], ups[1]),
+        XMMatrixLookToLH(pos, looks[2], ups[2]),
+        XMMatrixLookToLH(pos, looks[3], ups[3]),
+        XMMatrixLookToLH(pos, looks[4], ups[4]),
+        XMMatrixLookToLH(pos, looks[5], ups[5])
+    };
+
+    return views;
 }

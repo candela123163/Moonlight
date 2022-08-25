@@ -22,6 +22,6 @@ VertexOut vs(float3 posL : POSITION)
 
 float4 ps(VertexOut pin) : SV_TARGET
 {
-    float3 color = _EnvMap.Sample(_SamplerLinearWrap, pin.posL).rgb;
+    float3 color = _EnvMap.Sample(_SamplerLinearWrap, normalize(pin.posL)).rgb;
     return float4(color, 1.0f);
 }

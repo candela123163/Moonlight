@@ -1,7 +1,6 @@
 #include "stdafx.h"
 #include "texture.h"
 #include "util.h"
-#include "descriptor.h"
 #include "globals.h"
 using namespace std;
 using namespace DirectX;
@@ -11,24 +10,22 @@ void ITexture::BindSRV(ID3D12Device* device, DescriptorHeap* descriptorHeap)
 {
     D3D12_SHADER_RESOURCE_VIEW_DESC SRVDesc;
     GetSRVDes(SRVDesc);
-    DescriptorData descriptorData = descriptorHeap->GetNextnSrvDescriptor(1);
-    mSRVHeapIndex = descriptorData.HeapIndex;
-    mGpuDescriptor = descriptorData.GPUHandle;
-    device->CreateShaderResourceView(mTexture.Get(), &SRVDesc, descriptorData.CPUHandle);
+    mSrvDescriptorData = descriptorHeap->GetNextnSrvDescriptor(1);
+    device->CreateShaderResourceView(mTexture.Get(), &SRVDesc, mSrvDescriptorData.CPUHandle);
 }
 
 void ITexture::BindSRV(ID3D12Device* device, const DescriptorData& descriptorData)
 {
     D3D12_SHADER_RESOURCE_VIEW_DESC SRVDesc;
     GetSRVDes(SRVDesc);
-    mSRVHeapIndex = descriptorData.HeapIndex;
+    mSrvDescriptorData = descriptorData;
     device->CreateShaderResourceView(mTexture.Get(), &SRVDesc, descriptorData.CPUHandle);
-    mGpuDescriptor = descriptorData.GPUHandle;
 }
+
 
 // ----------- Texture -------------
 Texture::Texture(ID3D12Device* device, 
-    DescriptorHeap* srvHeap,
+    DescriptorHeap* descriptorHeap,
     ID3D12CommandQueue* commandQueue, 
     const filesystem::path& filePath)
 {
@@ -58,7 +55,7 @@ Texture::Texture(ID3D12Device* device,
     mFormat = desc.Format;
     mDimension = isCube ? TextureDimension::CubeMap : (mDepthCount > 1 ? TextureDimension::Tex2DArray : TextureDimension::Tex2D);
 
-    BindSRV(device, srvHeap);
+    BindSRV(device, descriptorHeap);
 }
 
 void Texture::GetSRVDes(D3D12_SHADER_RESOURCE_VIEW_DESC& outDesc)
@@ -101,7 +98,7 @@ Texture* Texture::GetOrLoad(const filesystem::path& texturePath, const GraphicCo
 
     if (!Globals::TextureContainer.Contains(textureKey))
     {
-        Globals::TextureContainer.Insert(
+        return Globals::TextureContainer.Insert(
             textureKey,
             make_unique<Texture>(context.device, context.descriptorHeap, context.commandQueue, texturePath)
         );
@@ -110,8 +107,9 @@ Texture* Texture::GetOrLoad(const filesystem::path& texturePath, const GraphicCo
     return Globals::TextureContainer.Get(textureKey);
 }
 
+
 // ----------- RenderTexture -------------
-RenderTexture::RenderTexture(ID3D12Device* device,
+RenderTexture::RenderTexture(ID3D12Device* device, DescriptorHeap* descriptorHeap,
     UINT width, UINT height,
     UINT depthCount, UINT mipCount, TextureDimension dimension,
     RenderTextureUsage usage, DXGI_FORMAT format,
@@ -164,6 +162,9 @@ RenderTexture::RenderTexture(ID3D12Device* device,
         GetD3DState(initState),
         &optClear,
         IID_PPV_ARGS(mTexture.GetAddressOf())));
+    
+    BindRTV(device, descriptorHeap);
+    BindSRV(device, descriptorHeap);
 }
 
 D3D12_RESOURCE_STATES RenderTexture::GetD3DState(RenderTextureState state)
@@ -248,6 +249,7 @@ void RenderTexture::BindRTV(ID3D12Device* device,
             rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
             rtvDesc.Format = mFormat;
             rtvDesc.Texture2D.PlaneSlice = 0;
+            rtvDesc.Texture2D.MipSlice = mipLevel;
             break;
 
         case TextureDimension::CubeMap:
@@ -268,17 +270,18 @@ void RenderTexture::BindRTV(ID3D12Device* device,
     else
     {
         D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc;
+        dsvDesc.Flags = D3D12_DSV_FLAG_NONE;
+        dsvDesc.Format = mFormat;
+
         switch (mDimension)
         {
         case TextureDimension::Tex2D:
-            dsvDesc.Flags = D3D12_DSV_FLAG_NONE;
             dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
-            dsvDesc.Format = mFormat;
+            dsvDesc.Texture2D.MipSlice = mipLevel;
             break;
 
         case TextureDimension::CubeMap:
         case TextureDimension::Tex2DArray:
-            dsvDesc.Flags = D3D12_DSV_FLAG_NONE;
             dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2DARRAY;
             dsvDesc.Texture2DArray.ArraySize = 1;
             dsvDesc.Texture2DArray.MipSlice = mipLevel;
@@ -289,6 +292,20 @@ void RenderTexture::BindRTV(ID3D12Device* device,
             break;
         }
         device->CreateDepthStencilView(mTexture.Get(), &dsvDesc, descriptor);
+    }
+}
+
+void RenderTexture::BindRTV(ID3D12Device* device, DescriptorHeap* descriptorHeap)
+{
+    mRtvDescriptorData = descriptorHeap->GetNextnRtvDescriptor(mMipCount * mDepthCount);
+    CD3DX12_CPU_DESCRIPTOR_HANDLE cpuHandle = mRtvDescriptorData.CPUHandle;
+    for (size_t i = 0; i < mDepthCount; i++)
+    {
+        for (size_t j = 0; j < mMipCount; j++)
+        {
+            BindRTV(device, cpuHandle, i, j);
+            cpuHandle.Offset(mRtvDescriptorData.IncrementSize);
+        }
     }
 }
 
@@ -309,4 +326,38 @@ void RenderTexture::SetViewPort(ID3D12GraphicsCommandList* commandList, UINT mip
     D3D12_RECT ScissorRect({ 0, 0, (LONG)currentWidth, (LONG)currentHeight });
     commandList->RSSetViewports(1, &Viewport);
     commandList->RSSetScissorRects(1, &ScissorRect);
+}
+
+void RenderTexture::SetAsRenderTarget(ID3D12GraphicsCommandList* commandList,
+    UINT depthSlice, UINT mipLevel,
+    UINT otherRTVNum, D3D12_CPU_DESCRIPTOR_HANDLE* otherRTVHandles,
+    D3D12_CPU_DESCRIPTOR_HANDLE* otherDSVHandles
+)
+{
+    UINT rtvNum = 0;
+    D3D12_CPU_DESCRIPTOR_HANDLE* rtvHandles = nullptr, * dsvHandles = nullptr;
+
+    CD3DX12_CPU_DESCRIPTOR_HANDLE cpuHandle = mRtvDescriptorData.CPUHandle;
+    cpuHandle.Offset(mMipCount * depthSlice + mipLevel, mRtvDescriptorData.IncrementSize);
+
+    if (mUsage == RenderTextureUsage::DepthBuffer)
+    {
+        rtvNum = otherRTVNum;
+        rtvHandles = otherRTVHandles;
+        dsvHandles = &cpuHandle;
+        commandList->ClearDepthStencilView(cpuHandle, 
+            D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 
+            1.0f, 0, 0, nullptr);
+    }
+    else
+    {
+        rtvNum = 1;
+        rtvHandles = &cpuHandle;
+        dsvHandles = otherDSVHandles;
+        float clearValue[] = { 0.0f, 0.0f, 0.0f, 0.0f };
+        commandList->ClearRenderTargetView(cpuHandle, clearValue, 0, nullptr);
+    }
+
+    SetViewPort(commandList, mipLevel);
+    commandList->OMSetRenderTargets(rtvNum, rtvHandles, false, dsvHandles);
 }

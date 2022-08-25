@@ -25,7 +25,7 @@ namespace Globals
     #define MATERIAL_MAX_SIZE 128
 
     // camera related
-    #define CAMERA_MOVE_SPEED 5.0f
+    #define CAMERA_MOVE_SPEED 3.0f
     #define CAMERA_TOUCH_SENSITIVITY 0.1f
 
     // light related
