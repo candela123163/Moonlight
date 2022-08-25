@@ -152,7 +152,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Use</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="code\src\globals.cpp" />
-    <ClCompile Include="code\src\IBLPreprocess.cpp" />
+    <ClCompile Include="code\src\IBLPreprocessPass.cpp" />
     <ClCompile Include="code\src\main.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Use</PrecompiledHeader>
     </ClCompile>
@@ -164,6 +164,7 @@
     <ClCompile Include="code\src\scene.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Use</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="code\src\shadowPass.cpp" />
     <ClCompile Include="code\src\skyBoxPass.cpp" />
     <ClCompile Include="code\src\stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
@@ -193,6 +194,7 @@
     <ClInclude Include="code\inc\passBase.h" />
     <ClInclude Include="code\inc\resourceContainer.h" />
     <ClInclude Include="code\inc\scene.h" />
+    <ClInclude Include="code\inc\shadowPass.h" />
     <ClInclude Include="code\inc\skyBoxPass.h" />
     <ClInclude Include="code\inc\stdafx.h" />
     <ClInclude Include="code\inc\texture.h" />

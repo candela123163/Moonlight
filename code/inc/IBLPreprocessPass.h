@@ -1,5 +1,4 @@
 #pragma once
-#pragma once
 #include "stdafx.h"
 #include "passBase.h"
 #include "util.h"
