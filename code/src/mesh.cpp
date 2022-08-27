@@ -3,6 +3,7 @@
 #include "util.h"
 #include "globals.h"
 using namespace std;
+using namespace DirectX;
 
 const std::vector<D3D12_INPUT_ELEMENT_DESC> Vertex::InputLayout =
 {
@@ -18,7 +19,7 @@ const std::vector<D3D12_INPUT_ELEMENT_DESC> Vertex::InputLayout =
 
 };
 
-Mesh::Mesh(const GraphicContext& context, const std::vector<Vertex>& vertexs, const std::vector<UINT>& indices)
+Mesh::Mesh(const GraphicContext& context, const std::vector<Vertex>& vertexs, const std::vector<UINT>& indices, BoundingBox bbx)
 {
     UINT vertexByteStride = sizeof(Vertex);
     UINT vertexByteSize = vertexByteStride * vertexs.size();
@@ -36,7 +37,7 @@ Mesh::Mesh(const GraphicContext& context, const std::vector<Vertex>& vertexs, co
     
     mIndexCount = indices.size();
 
-    // leave boundingbox for now
+    mBoundingBox = bbx;
 }
 
 Mesh* Mesh::GetOrLoad(int meshIndex, const aiScene* scene, int globalMeshIndex, const GraphicContext& context)
@@ -46,6 +47,11 @@ Mesh* Mesh::GetOrLoad(int meshIndex, const aiScene* scene, int globalMeshIndex, 
         const aiMesh* mesh = scene->mMeshes[meshIndex];
         vector<Vertex> vertices;
         vector<UINT> indices;
+
+        float _min = numeric_limits<float>::max();
+        float _max = numeric_limits<float>::min();
+        XMVECTOR vMin = XMLoadFloat3(get_rvalue_ptr(XMFLOAT3(_min, _min, _min)));
+        XMVECTOR vMax = XMLoadFloat3(get_rvalue_ptr(XMFLOAT3(_max, _max, _max)));
 
         for (size_t i = 0; i < mesh->mNumVertices; i++)
         {
@@ -58,6 +64,10 @@ Mesh* Mesh::GetOrLoad(int meshIndex, const aiScene* scene, int globalMeshIndex, 
                     mesh->mTextureCoords[0][i].x, mesh->mTextureCoords[0][i].y
                 )
             );
+
+            XMVECTOR p = XMLoadFloat3(get_rvalue_ptr(XMFLOAT3(mesh->mVertices[i].x, mesh->mVertices[i].y, mesh->mVertices[i].z)));
+            vMin = XMVectorMin(vMin, p);
+            vMax = XMVectorMax(vMax, p);
         }
 
         for (size_t i = 0; i < mesh->mNumFaces; i++)
@@ -68,8 +78,10 @@ Mesh* Mesh::GetOrLoad(int meshIndex, const aiScene* scene, int globalMeshIndex, 
                 indices.push_back(static_cast<UINT>(face.mIndices[j]));
             }
         }
-
-        return Globals::MeshContainer.Insert(globalMeshIndex, make_unique<Mesh>(context, vertices, indices));
+        BoundingBox bbx;
+        BoundingBox::CreateFromPoints(bbx, vMin, vMax);
+        
+        return Globals::MeshContainer.Insert(globalMeshIndex, make_unique<Mesh>(context, vertices, indices, bbx));
     }
 
     return Globals::MeshContainer.Get(globalMeshIndex);

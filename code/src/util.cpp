@@ -126,9 +126,8 @@ FXMMATRIX GenerateCubeProjectMatrix(float fovY, float aspect, float zNear, float
     return XMMatrixPerspectiveFovLH(fovY, aspect, zNear, zFar);
 }
 
-array<FXMMATRIX, 6> GenerateCubeViewMatrices()
+array<FXMMATRIX, 6> GenerateCubeViewMatrices(FXMVECTOR pos)
 {
-    static FXMVECTOR pos = XMLoadFloat3(get_rvalue_ptr(XMFLOAT3(0.0, 0.0, 0.0)));
     static FXMVECTOR looks[6] = {
         XMLoadFloat3(get_rvalue_ptr(XMFLOAT3(1.0, 0.0, 0.0))),  // +X
         XMLoadFloat3(get_rvalue_ptr(XMFLOAT3(-1.0, 0.0, 0.0))), // -X
@@ -146,7 +145,7 @@ array<FXMMATRIX, 6> GenerateCubeViewMatrices()
         XMLoadFloat3(get_rvalue_ptr(XMFLOAT3(0.0, 1.0, 0.0)))   // -Z
     };
 
-    static array<FXMMATRIX, 6> views = {
+    return {
         XMMatrixLookToLH(pos, looks[0], ups[0]),
         XMMatrixLookToLH(pos, looks[1], ups[1]),
         XMMatrixLookToLH(pos, looks[2], ups[2]),
@@ -155,5 +154,40 @@ array<FXMMATRIX, 6> GenerateCubeViewMatrices()
         XMMatrixLookToLH(pos, looks[5], ups[5])
     };
 
-    return views;
+}
+
+bool Intersects(
+    const DirectX::BoundingFrustum& frustum,
+    const DirectX::XMMATRIX& LtoW,
+    const DirectX::BoundingBox& bbx,
+    const DirectX::XMMATRIX& WtoL)
+{
+    XMMATRIX L1toL2 = XMMatrixMultiply(LtoW, WtoL);
+    BoundingFrustum localFrustum;
+    frustum.Transform(localFrustum, L1toL2);
+    return localFrustum.Intersects(bbx);
+}
+
+bool Intersects(
+    const DirectX::BoundingFrustum& frustum,
+    const DirectX::XMMATRIX& LtoW,
+    const DirectX::BoundingSphere& bsphere,
+    const DirectX::XMMATRIX& WtoL)
+{
+    XMMATRIX L1toL2 = XMMatrixMultiply(LtoW, WtoL);
+    BoundingFrustum localFrustum;
+    frustum.Transform(localFrustum, L1toL2);
+    return localFrustum.Intersects(bsphere);
+}
+
+bool Intersects(
+    const DirectX::BoundingFrustum& frustum,
+    const DirectX::XMMATRIX& LtoW,
+    const DirectX::BoundingFrustum& frustum2,
+    const DirectX::XMMATRIX& WtoL)
+{
+    XMMATRIX L1toL2 = XMMatrixMultiply(LtoW, WtoL);
+    BoundingFrustum localFrustum;
+    frustum.Transform(localFrustum, L1toL2);
+    return localFrustum.Intersects(frustum2);
 }

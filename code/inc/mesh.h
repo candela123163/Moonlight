@@ -43,12 +43,12 @@ class Mesh
 {
 public:
     
-    Mesh(const GraphicContext& context, const std::vector<Vertex>& vertexs, const std::vector<UINT>& indices);
+    Mesh(const GraphicContext& context, const std::vector<Vertex>& vertexs, const std::vector<UINT>& indices, DirectX::BoundingBox bbx);
 
     D3D12_VERTEX_BUFFER_VIEW VertexBufferView() const { return mVertexBufferView; }
     D3D12_INDEX_BUFFER_VIEW IndexBufferView() const { return mIndexBufferView; }
     UINT IndexCount() const { return mIndexCount; }
-    DirectX::BoundingBox BoundingBox() const { return mBoundingBox; }
+    DirectX::BoundingBox GetBoundingBox() const { return mBoundingBox; }
 
     static Mesh* GetOrLoad(int meshID, const aiScene* scene, int globalMeshIndex, const GraphicContext& context);
     void Draw(ID3D12GraphicsCommandList* commandList);

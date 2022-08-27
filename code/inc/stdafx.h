@@ -22,6 +22,7 @@
 #include <sstream>
 #include <cassert>
 #include <filesystem>
+#include <limits>
 
 #include <WICTextureLoader.h>
 #include <DDSTextureLoader.h>

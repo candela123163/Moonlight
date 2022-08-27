@@ -26,7 +26,7 @@
             "Color": [ 1.0, 0.0, 0.0 ],
             "Intensity": 3.0,
             "Near": 0.1,
-            "Range": 15.0
+            "Range": 5.0
         },
 
         {
@@ -34,7 +34,7 @@
             "Color": [ 0.0, 1.0, 0.0 ],
             "Intensity": 3.0,
             "Near": 0.1,
-            "Range": 15.0
+            "Range": 5.0
         },
 
         {
@@ -42,7 +42,7 @@
             "Color": [ 0.0, 0.0, 1.0 ],
             "Intensity": 3.0,
             "Near": 0.1,
-            "Range": 15.0
+            "Range": 5.0
         },
 
         {
@@ -50,17 +50,17 @@
             "Color": [ 1.0, 0.0, 1.0 ],
             "Intensity": 3.0,
             "Near": 0.1,
-            "Range": 15.0
+            "Range": 5.0
         }],
 
     "SpotLights":[
         {
-            "Position": [ 0.0, 8.0, 0.0 ],
-            "Color": [ 1.0, 0.0, 1.0 ],
+            "Position": [ 2.5, 10.0, 0.0 ],
+            "Color": [ 0.89, 0.72, 0.05 ],
             "Intensity": 3.0,
-            "Direction": [ 0.0, -1.0, 0.0 ],
+            "Direction": [ 0.0, -0.5, 0.85 ],
             "Near": 0.1,
-            "Range": 15.0,
+            "Range": 5.0,
             "OutterAngle": 60.0,
             "InnerAngle": 45.0
         }

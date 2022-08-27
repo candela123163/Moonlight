@@ -132,7 +132,7 @@ void IBLPreprocessPass::ReleasePass(const GraphicContext& context)
 void IBLPreprocessPass::PreprocessPass(const GraphicContext& context)
 {
     FXMMATRIX project = GenerateCubeProjectMatrix(M_PI_2, 1.0, 0.1, 300.0);
-    array<FXMMATRIX, 6> views = GenerateCubeViewMatrices();
+    array<FXMMATRIX, 6> views = GenerateCubeViewMatrices(XMLoadFloat3(get_rvalue_ptr(XMFLOAT3(0.0f, 0.0f, 0.0f))));
     const SkyBox& skybox = context.scene->GetSkybox();
 
     // set matrix constant

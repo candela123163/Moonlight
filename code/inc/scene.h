@@ -12,9 +12,7 @@ struct GraphicContext;
 class Instance
 {
 public:
-    Instance(UINT id, DirectX::XMFLOAT4X4 ts, Material* material, Mesh* mesh):
-        mInstanceID(id),
-        mTransform(ts), mMaterial(material), mMesh(mesh) {}
+    Instance(UINT id, DirectX::XMFLOAT4X4 ts, Material* material, Mesh* mesh);
 
     Material* GetMaterial() const { return mMaterial; }
     Mesh* GetMesh() const { return mMesh; }
@@ -25,8 +23,12 @@ public:
     
     void UpdateConstant(const GraphicContext& context);
 
+    DirectX::XMMATRIX Transform() const { return mTransform; }
+    DirectX::XMMATRIX InvTransform() const { return mInvTransform; }
+
 private:
-    DirectX::XMFLOAT4X4 mTransform;
+    DirectX::XMMATRIX mTransform;
+    DirectX::XMMATRIX mInvTransform;
     Material* mMaterial;
     Mesh* mMesh;
 
@@ -52,12 +54,19 @@ public:
     void OnMouseMove(WPARAM btnState, int x, int y, float dx, float dy);
     void OnKeyboardInput(const Timer& timer);
 
-    const Camera* GetCamera() const { return mCamera.get(); }
+    Camera* GetCamera() { return mCamera.get(); }
     const DirectionalLight& GetDirectionalLight() const { return mDirectionalLight; }
-    const std::vector<PointLight>& GetPointLights() const { return mPointLights; }
-    const std::vector<SpotLight>& GetSpotLights() const { return mSpotLights; }
+    
+    std::vector<const PointLight*> GetVisiblePointLights() const { return mVisiblePointLights; }
+    std::vector<const SpotLight*> GetVisibleSpotLights() const { return mVisibleSpotLights; }
 
-    const std::vector<Instance*>& GetRenderInstances() const { return mSortedInstances; }
+    std::vector<Instance*> GetVisibleRenderInstances(
+        const DirectX::BoundingFrustum& frustum,
+        const DirectX::XMMATRIX& LtoW,
+        const DirectX::XMVECTOR& pos,
+        const DirectX::XMVECTOR& direction
+        ) const;
+
     const SkyBox& GetSkybox() const { return mSkybox; }
 
 private:
@@ -73,26 +82,26 @@ private:
         DirectX::FXMVECTOR worldUp,
         float fovY, float aspect, float zNear, float zFar);
 
-    void GenerateRenderInstances();
-
     void UpdateInstanceConstant(const GraphicContext& context);
     void UpdateMaterialConstant(const GraphicContext& context);
-    void UpdateLightShadowConstant(const GraphicContext& context);
+    void UpdateLightConstant(const GraphicContext& context);
 
-    bool StillLightDirty() const { return mLightDirtyCount > 0; }
-    void MarkLightDirty() { mLightDirtyCount = FRAME_COUNT; }
+    void GenerateVisiblePointLights() ;
+    void GenerateVisibleSpotLights();
 
 private:
     std::unique_ptr<Camera> mCamera;
 
     // lights
     DirectionalLight mDirectionalLight;
+
     std::vector<PointLight> mPointLights;
+    std::vector<const PointLight*> mVisiblePointLights;
+
     std::vector<SpotLight> mSpotLights;
-    UINT mLightDirtyCount = FRAME_COUNT;
+    std::vector<const SpotLight*> mVisibleSpotLights;
     
     std::vector<std::unique_ptr<Instance>> mInstances;
-    std::vector<Instance*> mSortedInstances;
-
+    
     SkyBox mSkybox;
 };

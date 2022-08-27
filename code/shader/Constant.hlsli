@@ -83,4 +83,12 @@ cbuffer LightConstant : register(bx)                        \
     SpotLight _SpotLights[SPOT_LIGHT_MAX_COUNT];            \
 }
 
+#define DEFINE_SHADOW_CASTER_CONSTANT(bx)                   \
+cbuffer ShadowCasterConstant : register(bx)                 \
+{                                                           \
+    float4x4 _LightViewProject;                             \
+    float3 _LightPosition;                                  \
+    float _LightInvRange;                                      \
+}
+
 #endif

@@ -19,6 +19,13 @@ struct PointLight
     float Near = 0.1f;
     float Range = 10.0f;
     std::unique_ptr<RenderTexture> ShadowMap = nullptr;
+
+    DirectX::XMMATRIX Views[6];
+    DirectX::XMMATRIX Project;
+    DirectX::BoundingFrustum Frustum;
+    // for frustum intersect test, orientation doesn't matter
+    DirectX::XMMATRIX InvView;
+    DirectX::BoundingSphere BoundingSphere;
 };
 
 struct SpotLight
@@ -32,4 +39,10 @@ struct SpotLight
     float OutterAngle = 60.0f;
     float InnerAngle = 45.0f;
     std::unique_ptr<RenderTexture> ShadowMap = nullptr;
+
+    DirectX::XMMATRIX View;
+    DirectX::XMMATRIX Project;
+    // for frustum intersect test
+    DirectX::XMMATRIX InvView;
+    DirectX::BoundingFrustum Frustum;
 };

@@ -124,4 +124,23 @@ float RadiansToDegree(float radians);
 
 DirectX::FXMMATRIX GenerateCubeProjectMatrix(float fovY, float aspect, float zNear, float zFar);
 
-std::array<DirectX::FXMMATRIX, 6> GenerateCubeViewMatrices();
+std::array<DirectX::FXMMATRIX, 6> GenerateCubeViewMatrices(DirectX::FXMVECTOR pos);
+
+// intersect test
+bool Intersects(
+    const DirectX::BoundingFrustum& frustum,
+    const DirectX::XMMATRIX& LtoW,
+    const DirectX::BoundingBox& bbx,
+    const DirectX::XMMATRIX& WtoL);
+
+bool Intersects(
+    const DirectX::BoundingFrustum& frustum,
+    const DirectX::XMMATRIX& LtoW,
+    const DirectX::BoundingSphere& bsphere,
+    const DirectX::XMMATRIX& WtoL);
+
+bool Intersects(
+    const DirectX::BoundingFrustum& frustum,
+    const DirectX::XMMATRIX& LtoW,
+    const DirectX::BoundingFrustum& frustum2,
+    const DirectX::XMMATRIX& WtoL);

@@ -7,6 +7,13 @@ using namespace std;
 using namespace DirectX;
 using namespace nlohmann;
 
+Instance::Instance(UINT id, DirectX::XMFLOAT4X4 ts, Material* material, Mesh* mesh) :
+    mInstanceID(id), mMaterial(material), mMesh(mesh)
+{
+    mTransform = XMLoadFloat4x4(&ts);
+    mInvTransform = XMMatrixInverse(get_rvalue_ptr(XMMatrixDeterminant(mTransform)), mTransform);
+}
+
 void Instance::UpdateConstant(const GraphicContext& context)
 {
     if (!StillDirty())
@@ -16,9 +23,9 @@ void Instance::UpdateConstant(const GraphicContext& context)
     mDirtyCount--;
 
     ObjectConstant objectConstant;
-    XMMATRIX world = XMLoadFloat4x4(&mTransform);
-    XMStoreFloat4x4(&objectConstant.World, XMMatrixTranspose(world));
-    XMStoreFloat4x4(&objectConstant.InverseTransposedWorld, XMMatrixInverse(get_rvalue_ptr(XMMatrixDeterminant(world)), world));
+    
+    XMStoreFloat4x4(&objectConstant.World, XMMatrixTranspose(mTransform));
+    XMStoreFloat4x4(&objectConstant.InverseTransposedWorld, mInvTransform);
     context.frameResource->ConstantObject->CopyData(objectConstant, mInstanceID);
 }
 
@@ -37,13 +44,15 @@ bool Scene::Load(const filesystem::path& filePath, const GraphicContext& context
 
 void Scene::OnLoadOver(const GraphicContext& context) 
 {
-    //OnUpdate(context);
+    
 }
 
 void Scene::OnUpdate(const GraphicContext& context)
 {
-    GenerateRenderInstances();
-    UpdateLightShadowConstant(context);
+    GenerateVisiblePointLights();
+    GenerateVisibleSpotLights();
+
+    UpdateLightConstant(context);
     mCamera->UpdateConstant(context);
     UpdateInstanceConstant(context);
     UpdateMaterialConstant(context);
@@ -187,6 +196,23 @@ bool Scene::LoadLight(const nlohmann::json& sceneConfig, const GraphicContext& c
             6, 1, TextureDimension::CubeMap,
             RenderTextureUsage::DepthBuffer, DXGI_FORMAT_D32_FLOAT
             );
+        
+        auto views = GenerateCubeViewMatrices(XMLoadFloat3(&pointLight.Position));
+        
+        pointLight.Project = GenerateCubeProjectMatrix(M_PI_2, 1.0F, pointLight.Near, pointLight.Range);
+                
+        BoundingFrustum::CreateFromMatrix(pointLight.Frustum, pointLight.Project);
+
+        // from view space to world space, orientation doesn't matter
+        pointLight.InvView = XMMatrixTranslation(pointLight.Position.x, pointLight.Position.y, pointLight.Position.z);
+
+        pointLight.BoundingSphere.Center = pointLight.Position;
+        pointLight.BoundingSphere.Radius = pointLight.Range;
+
+        for (size_t i = 0; i < 6; i++)
+        {
+            pointLight.Views[i] = views[i];
+        }
 
         mPointLights[i] = move(pointLight);
     }
@@ -235,6 +261,18 @@ bool Scene::LoadLight(const nlohmann::json& sceneConfig, const GraphicContext& c
             1, 1, TextureDimension::Tex2D,
             RenderTextureUsage::DepthBuffer, DXGI_FORMAT_D32_FLOAT
             );
+
+        spotLight.View = XMMatrixLookToLH(
+                XMLoadFloat3(&spotLight.Position),
+                XMLoadFloat3(&spotLight.Direction),
+                XMLoadFloat3(get_rvalue_ptr(XMFLOAT3(0.0f, 1.0f, 0.0f)))
+            );
+        
+        spotLight.Project = GenerateCubeProjectMatrix( M_PI_2, 1.0f, spotLight.Near, spotLight.Range);
+
+        spotLight.InvView = XMMatrixInverse(get_rvalue_ptr(XMMatrixDeterminant(spotLight.View)), spotLight.View);
+        
+        BoundingFrustum::CreateFromMatrix(spotLight.Frustum, spotLight.Project);
 
         mSpotLights[i] = move(spotLight);
     }
@@ -312,18 +350,9 @@ bool Scene::LoadInstance(const aiNode* node, const aiScene* scene, const Graphic
     return true;
 }
 
-void Scene::GenerateRenderInstances()
-{
-    mSortedInstances.resize(mInstances.size());
-    for (size_t i = 0; i < mInstances.size(); i++)
-    {
-        mSortedInstances[i] = mInstances[i].get();
-    }
-}
-
 void Scene::UpdateInstanceConstant(const GraphicContext& context)
 {
-    for (auto instance : mSortedInstances)
+    for (auto& instance : mInstances)
     {
         instance->UpdateConstant(context);
     }
@@ -331,55 +360,126 @@ void Scene::UpdateInstanceConstant(const GraphicContext& context)
 
 void Scene::UpdateMaterialConstant(const GraphicContext& context)
 {
-    for (auto instance : mSortedInstances)
+    for (auto& instance : mInstances)
     {
         instance->GetMaterial()->UpdateConstant(context);
     }
 }
 
-void Scene::UpdateLightShadowConstant(const GraphicContext& context)
+void Scene::UpdateLightConstant(const GraphicContext& context)
 {
-    if (!StillLightDirty())
-        return;
-
-    mLightDirtyCount--;
-
     LightConstant lightConstant;
     lightConstant.SunColor = mDirectionalLight.Color;
     lightConstant.SunDirection = mDirectionalLight.Direction;
     lightConstant.SunIntensity = mDirectionalLight.Intensity;
 
-    lightConstant.PointLightCount = mPointLights.size();
-    for (size_t i = 0; i < mPointLights.size(); i++)
+    
+    lightConstant.PointLightCount = mVisiblePointLights.size();
+    for (size_t i = 0; i < mVisiblePointLights.size(); i++)
     {
-        const PointLight& light = mPointLights[i];
+        const PointLight* light = mVisiblePointLights[i];
         lightConstant.PointLights[i] = {
-            light.Color,
-            light.Intensity,
-            light.Position,
-            1.0f / max(0.0001f,light.Range * light.Range)
+            light->Color,
+            light->Intensity,
+            light->Position,
+            1.0f / max(0.0001f,light->Range * light->Range)
         };
     }
 
-    lightConstant.SpotLightCount = mSpotLights.size();
-    for (size_t i = 0; i < mSpotLights.size(); i++)
+    lightConstant.SpotLightCount = mVisibleSpotLights.size();
+    for (size_t i = 0; i < mVisibleSpotLights.size(); i++)
     {
-        const SpotLight& light = mSpotLights[i];
-        float innerCos = cosf(light.InnerAngle);
-        float outterCos = cosf(light.OutterAngle);
+        const SpotLight* light = mVisibleSpotLights[i];
+        float innerCos = cosf(light->InnerAngle);
+        float outterCos = cosf(light->OutterAngle);
         float invAngleRange = 1.0f / max(innerCos - outterCos, 0.0001f);
 
         lightConstant.SpotLights[i] = {
-            light.Color,
-            1.0f / max(0.0001f, light.Range * light.Range),
-            light.Position,
+            light->Color,
+            1.0f / max(0.0001f, light->Range * light->Range),
+            light->Position,
             invAngleRange,
-            light.Direction,
+            light->Direction,
             -outterCos * invAngleRange,
-            light.Intensity,
+            light->Intensity,
             XMFLOAT3(0, 0, 0)
         };
     }
 
-    context.frameResource->ConstantLight->CopyData(lightConstant);
+    context.frameResource->ConstantLight->CopyData(lightConstant);  
+}
+
+vector<Instance*> Scene::GetVisibleRenderInstances(
+    const BoundingFrustum& frustum,
+    const XMMATRIX& LtoW,
+    const XMVECTOR& pos,
+    const XMVECTOR& direction
+) const
+{
+    vector<Instance*> instances;
+    instances.reserve(mInstances.size());
+    for (auto& instance : mInstances)
+    {
+        if (Intersects(frustum, LtoW, instance->GetMesh()->GetBoundingBox(), instance->InvTransform())) {
+            instances.push_back(instance.get());
+        }
+    }
+
+    XMVECTOR nDirection = XMVector3Normalize(direction);
+    sort(begin(instances), end(instances), [pos, nDirection](Instance* l, Instance* r) -> bool
+    {
+        XMVECTOR leftCenterLocal = XMLoadFloat3(get_rvalue_ptr(l->GetMesh()->GetBoundingBox().Center));
+        XMVECTOR leftCenterWorld = XMVector3Transform(leftCenterLocal, l->Transform());
+        XMVECTOR leftToFrustumOrigin = XMVectorSubtract(leftCenterWorld, pos);
+        XMVECTOR leftDepth = XMVector3Dot(leftToFrustumOrigin, nDirection);
+
+        XMVECTOR rightCenterLocal = XMLoadFloat3(get_rvalue_ptr(r->GetMesh()->GetBoundingBox().Center));
+        XMVECTOR rightCenterWorld = XMVector3Transform(rightCenterLocal, r->Transform());
+        XMVECTOR rightToFrustumOrigin = XMVectorSubtract(rightCenterWorld, pos);
+        XMVECTOR rightDepth = XMVector3Dot(rightToFrustumOrigin, nDirection);
+
+        return XMVector3Less(leftDepth, rightDepth);
+    });
+
+    return instances;
+}
+
+void Scene::GenerateVisiblePointLights() 
+{
+    mVisiblePointLights.clear();
+    mVisiblePointLights.reserve(mPointLights.size());
+    mCamera->UpdateViewMatrix();
+
+    for (auto& pointLight : mPointLights)
+    {
+        if (Intersects(
+            mCamera->GetFrustum(),
+            mCamera->GetInvView(),
+            pointLight.BoundingSphere,
+            pointLight.InvView
+        )) {
+            mVisiblePointLights.push_back(&pointLight);
+        }
+    }
+    
+}
+
+void Scene::GenerateVisibleSpotLights() 
+{
+    mVisibleSpotLights.clear();
+    mVisibleSpotLights.reserve(mSpotLights.size());
+    mCamera->UpdateViewMatrix();
+
+    for (auto& spotLight : mSpotLights)
+    {
+        if (Intersects(
+            mCamera->GetFrustum(),
+            mCamera->GetInvView(),
+            spotLight.Frustum,
+            spotLight.InvView
+        ))
+        {
+            mVisibleSpotLights.push_back(&spotLight);
+        }
+    }
 }

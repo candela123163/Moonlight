@@ -44,9 +44,8 @@ public:
 	// Get View/Proj matrices.
 	DirectX::XMMATRIX GetView() const;
 	DirectX::XMMATRIX GetProj() const;
-
-	DirectX::XMFLOAT4X4 GetView4x4f() const;
-	DirectX::XMFLOAT4X4 GetProj4x4f() const;
+	DirectX::XMMATRIX GetInvView() const;
+	DirectX::BoundingFrustum GetFrustum() const;
 
 	// Strafe/Walk the camera a distance d.
 	void Strafe(float d);
@@ -85,8 +84,11 @@ private:
 	bool mViewDirty = true;
 
 	// Cache View/Proj matrices.
-	DirectX::XMFLOAT4X4 mView;
-	DirectX::XMFLOAT4X4 mProj;
+	DirectX::XMMATRIX mView;
+	DirectX::XMMATRIX mInvView;
+	
+	DirectX::XMMATRIX mProj;
+	DirectX::BoundingFrustum mFrustum;
 
 	// determine whether to update constant buffer
 	UINT mDirtyCount = FRAME_COUNT;

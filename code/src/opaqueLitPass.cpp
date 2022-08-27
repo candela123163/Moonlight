@@ -96,7 +96,10 @@ void OpaqueLitPass::DrawPass(const GraphicContext& context)
     context.commandList->SetGraphicsRootDescriptorTable((int)RootSignatureParam::Texture2DTable, context.descriptorHeap->GetSrvHeap()->GetGPUDescriptorHandleForHeapStart());
     context.commandList->SetGraphicsRootDescriptorTable((int)RootSignatureParam::TextureCubeTable, context.descriptorHeap->GetSrvHeap()->GetGPUDescriptorHandleForHeapStart());
 
-    const vector<Instance*>& renderInstances = context.scene->GetRenderInstances();
+    Camera* camera = context.scene->GetCamera();
+    camera->UpdateViewMatrix();
+    const vector<Instance*>& renderInstances = context.scene->GetVisibleRenderInstances(camera->GetFrustum(), camera->GetInvView(), camera->GetPosition(), camera->GetLook());
+
     int currMaterialID = -1;
     for (size_t i = 0; i < renderInstances.size(); i++)
     {

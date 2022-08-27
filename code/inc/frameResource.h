@@ -83,10 +83,12 @@ struct LightConstant
 };
 
 
-struct ShadowConstant
+struct ShadowCasterConstant
 {
-    int CascadeCount;
-
+    DirectX::XMFLOAT4X4 LightViewProject;
+    // for point & spot light w is 1 / range
+    DirectX::XMFLOAT3 LightPosition;
+    float LightRange;
 };
 
 
@@ -104,6 +106,7 @@ struct FrameResources
 
     std::unique_ptr<UploadBuffer<CameraConstant, true>> ConstantCamera;
     std::unique_ptr<UploadBuffer<LightConstant, true>> ConstantLight;
+    std::unique_ptr<UploadBuffer<ShadowCasterConstant, true>> ConstantShadowCaster;
 
     std::unique_ptr<UploadBuffer<ObjectConstant, true>> ConstantObject;
     std::unique_ptr<UploadBuffer<MaterialConstant, true>> ConstantMaterial;
