@@ -244,6 +244,7 @@ void Camera::UpdateViewMatrix()
 		XMVECTOR P = XMLoadFloat3(&mPosition);
 
 		mView = XMMatrixLookToLH(P, L, U);
+		
 		mInvView = XMMatrixInverse(get_rvalue_ptr(XMMatrixDeterminant(mView)), mView);
 	}
 }

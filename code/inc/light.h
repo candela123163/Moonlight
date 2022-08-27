@@ -2,6 +2,7 @@
 #include "stdafx.h"
 #include "texture.h"
 #include "globals.h"
+#include "util.h"
 
 struct DirectionalLight
 {
@@ -9,6 +10,18 @@ struct DirectionalLight
     float Intensity;
     DirectX::XMFLOAT3 Direction;
     std::unique_ptr<RenderTexture> ShadowMaps[MAX_CASCADE_COUNT];
+};
+
+enum class CubeFaceID
+{
+    PositiveX = 0,
+    NegativeX = 1,
+    PositiveY = 2,
+    NegativeY = 3,
+    PositiveZ = 4,
+    NegativeZ = 5,
+
+    COUNT = 6
 };
 
 struct PointLight
@@ -20,12 +33,27 @@ struct PointLight
     float Range = 10.0f;
     std::unique_ptr<RenderTexture> ShadowMap = nullptr;
 
-    DirectX::XMMATRIX Views[6];
+    DirectX::XMMATRIX Views[(int)CubeFaceID::COUNT];
     DirectX::XMMATRIX Project;
     DirectX::BoundingFrustum Frustum;
-    // for frustum intersect test, orientation doesn't matter
-    DirectX::XMMATRIX InvView;
+
     DirectX::BoundingSphere BoundingSphere;
+
+    DirectX::XMMATRIX GetViewProject(CubeFaceID face)
+    {
+        return XMMatrixMultiply(Views[(int)face], Project);
+    }
+
+    DirectX::XMMATRIX GetInvViewProject(CubeFaceID face)
+    {
+        DirectX::XMMATRIX viewProject = GetViewProject(face);
+        return XMMatrixInverse(get_rvalue_ptr(XMMatrixDeterminant(viewProject)), viewProject);
+    }
+
+    DirectX::XMMATRIX GetInvView(CubeFaceID face)
+    {
+        return XMMatrixInverse(get_rvalue_ptr(XMMatrixDeterminant(Views[(int)face])), Views[(int)face]);
+    }
 };
 
 struct SpotLight
@@ -41,8 +69,9 @@ struct SpotLight
     std::unique_ptr<RenderTexture> ShadowMap = nullptr;
 
     DirectX::XMMATRIX View;
-    DirectX::XMMATRIX Project;
-    // for frustum intersect test
     DirectX::XMMATRIX InvView;
+    DirectX::XMMATRIX Project;
+    DirectX::XMMATRIX ViewProject;
+    DirectX::XMMATRIX InViewProject;
     DirectX::BoundingFrustum Frustum;
 };

@@ -203,9 +203,6 @@ bool Scene::LoadLight(const nlohmann::json& sceneConfig, const GraphicContext& c
                 
         BoundingFrustum::CreateFromMatrix(pointLight.Frustum, pointLight.Project);
 
-        // from view space to world space, orientation doesn't matter
-        pointLight.InvView = XMMatrixTranslation(pointLight.Position.x, pointLight.Position.y, pointLight.Position.z);
-
         pointLight.BoundingSphere.Center = pointLight.Position;
         pointLight.BoundingSphere.Radius = pointLight.Range;
 
@@ -267,10 +264,12 @@ bool Scene::LoadLight(const nlohmann::json& sceneConfig, const GraphicContext& c
                 XMLoadFloat3(&spotLight.Direction),
                 XMLoadFloat3(get_rvalue_ptr(XMFLOAT3(0.0f, 1.0f, 0.0f)))
             );
+        spotLight.InvView = XMMatrixInverse(get_rvalue_ptr(XMMatrixDeterminant(spotLight.View)), spotLight.View);
         
         spotLight.Project = GenerateCubeProjectMatrix( M_PI_2, 1.0f, spotLight.Near, spotLight.Range);
 
-        spotLight.InvView = XMMatrixInverse(get_rvalue_ptr(XMMatrixDeterminant(spotLight.View)), spotLight.View);
+        spotLight.ViewProject = XMMatrixMultiply(spotLight.View, spotLight.Project);
+        spotLight.InViewProject = XMMatrixInverse(get_rvalue_ptr(XMMatrixDeterminant(spotLight.ViewProject)), spotLight.ViewProject);
         
         BoundingFrustum::CreateFromMatrix(spotLight.Frustum, spotLight.Project);
 
@@ -456,7 +455,7 @@ void Scene::GenerateVisiblePointLights()
             mCamera->GetFrustum(),
             mCamera->GetInvView(),
             pointLight.BoundingSphere,
-            pointLight.InvView
+            XMMatrixIdentity()
         )) {
             mVisiblePointLights.push_back(&pointLight);
         }
@@ -476,7 +475,7 @@ void Scene::GenerateVisibleSpotLights()
             mCamera->GetFrustum(),
             mCamera->GetInvView(),
             spotLight.Frustum,
-            spotLight.InvView
+            spotLight.View
         ))
         {
             mVisibleSpotLights.push_back(&spotLight);
