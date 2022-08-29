@@ -67,16 +67,16 @@ Light GetSpotLight(int index, Surface surface)
     light.direction = normalize(ray);
     float squareDistance = max(0.0001f, dot(ray, ray));
     float rangeAttenuation = 
-    Square(
-        saturate(
-            1.0f - Square(squareDistance * spotLight.InvSquareRange)
-        )
-    ) / squareDistance;
-    float spotAttenuation =
-    Square(
-        saturate(dot(spotLight.Direction, light.direction)) * spotLight.AttenuationFactorA
-        + spotLight.AttenuationFactorB
-    );
+        Square(
+            saturate(
+                1.0f - Square(squareDistance * spotLight.InvSquareRange)
+            )
+        ) / squareDistance;
+    float spotAttenuation = 
+        Square(
+            saturate(dot(-normalize(spotLight.Direction), light.direction) * spotLight.AttenuationFactorA
+            + spotLight.AttenuationFactorB)
+        );
     light.attenuation = rangeAttenuation * spotAttenuation;
     
     return light;

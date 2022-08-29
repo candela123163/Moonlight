@@ -42,6 +42,9 @@ float4 CubeMapVertexTransform(float3 posL, float4x4 viewProject, float3 eyePosW)
     float4 posW = float4(posL, 1.0f);
     posW.xyz += eyePosW;
     float4 posH = mul(posW, viewProject).xyww;
+#ifdef REVERSE_Z
+    posH.z = 0.0f;
+#endif
     return posH;
 }
 
@@ -85,6 +88,33 @@ static const float3 CubeFaceNormals[6] =
 float3 GetCubeFaceNormal(float3 dir)
 {
     return CubeFaceNormals[CubeMapFaceID(dir)];
+}
+
+
+static const float2 OffsetSelecter[6][3] =
+{
+    { float2(0.0, 0.0), float2(0.0, 1.0), float2(-1.0, 0.0) },  // +X
+    { float2(0.0, 0.0), float2(0.0, 1.0), float2(1.0, 0.0) },  // -X
+    { float2(0.0, 1.0), float2(0.0, 0.0), float2(1.0, 0.0) },  // +Y
+    { float2(0.0, 1.0), float2(0.0, 0.0), float2(-1.0, 0.0) },  // -Y
+    { float2(1.0, 0.0), float2(0.0, 1.0), float2(0.0, 0.0) },  // +Z
+    { float2(-1.0, 0.0), float2(0.0, 1.0), float2(0.0, 0.0) }   // -Z
+};
+
+// given a cube sample direction and a 2d offset, 
+// calculate a new cube sample direction perturbed by this offset
+// @param:
+//  dir:  a cube sample direction
+//  offset: 2d perturbe vector
+// @return: a new cube sample direction
+float3 GetCubeShadowSamplingDirection(float3 dir, float2 offset)
+{
+    float3 perturbed = dir / max(abs(dir.x), max(abs(dir.y), abs(dir.z)));
+    uint faceID = CubeMapFaceID(dir);
+    perturbed.x += dot(offset, OffsetSelecter[faceID][0]);
+    perturbed.y += dot(offset, OffsetSelecter[faceID][1]);
+    perturbed.z += dot(offset, OffsetSelecter[faceID][2]);
+    return normalize(perturbed);
 }
 
 // ==========================================================================

@@ -173,7 +173,7 @@ D3D12_RESOURCE_STATES RenderTexture::GetD3DState(RenderTextureState state)
     switch (state)
     {
     case RenderTextureState::Write:
-        d3dState = D3D12_RESOURCE_STATE_RENDER_TARGET;
+        d3dState = mUsage == RenderTextureUsage::ColorBuffer ? D3D12_RESOURCE_STATE_RENDER_TARGET : D3D12_RESOURCE_STATE_DEPTH_WRITE;
         break;
     case RenderTextureState::Read:
         d3dState = mUsage == RenderTextureUsage::ColorBuffer ? D3D12_RESOURCE_STATE_GENERIC_READ : D3D12_RESOURCE_STATE_DEPTH_READ;
@@ -345,9 +345,14 @@ void RenderTexture::SetAsRenderTarget(ID3D12GraphicsCommandList* commandList,
         rtvNum = otherRTVNum;
         rtvHandles = otherRTVHandles;
         dsvHandles = &cpuHandle;
+#ifdef REVERSE_Z    
+        float zClearValue = 0.0f;
+#else
+        float zClearValue = 1.0f;
+#endif
         commandList->ClearDepthStencilView(cpuHandle, 
             D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 
-            1.0f, 0, 0, nullptr);
+            zClearValue, 0, 0, nullptr);
     }
     else
     {

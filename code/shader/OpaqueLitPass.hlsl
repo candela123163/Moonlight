@@ -18,7 +18,6 @@ struct VertexOut
     float3 tangentW : VAR_TANGENT_W;
     float3 biTangentW : VAR_BITANGENT_W;
     float2 uv : VAR_TEXCOORD;
-    float depthV : VAR_DEPTH_V;
 };
 
 
@@ -32,12 +31,12 @@ VertexOut vs(VertexIn vin)
     vout.tangentW = mul(vin.tangentL, (float3x3) _World);
     vout.biTangentW = mul(vin.biTangentL, (float3x3) _World);
     vout.uv = vin.uv;
-    vout.depthV = -mul(posW, _View).z;
+
     return vout;
 }
 
 float4 ps(VertexOut pin) : SV_TARGET
-{
+{    
     pin.normalW = normalize(pin.normalW);
     pin.tangentW = normalize(pin.tangentW);
     pin.biTangentW = normalize(pin.biTangentW);
@@ -60,7 +59,7 @@ float4 ps(VertexOut pin) : SV_TARGET
     surface.position = pin.posW;
     surface.albedo = baseColor.rgb;
     surface.alpha = baseColor.a;
-    surface.depth = pin.depthV;
+    surface.depth = pin.posH.w;
     surface.normal = normalW;
     surface.interpolatedNormal = pin.normalW;
     surface.metallic = GetMetallic(pin.uv);

@@ -114,9 +114,13 @@ void Camera::SetLens(float fovY, float aspect, float zn, float zf)
 
 	mNearWindowHeight = 2.0f * mNearZ * tanf(0.5f * mFovY);
 	mFarWindowHeight = 2.0f * mFarZ * tanf(0.5f * mFovY);
-
+	
 	mProj = XMMatrixPerspectiveFovLH(mFovY, mAspect, mNearZ, mFarZ);
 	BoundingFrustum::CreateFromMatrix(mFrustum, mProj);
+
+#ifdef REVERSE_Z
+	mProj = XMMatrixPerspectiveFovLH(mFovY, mAspect, mFarZ, mNearZ);
+#endif
 
 	MarkConstantDirty();
 }
@@ -275,7 +279,6 @@ void Camera::UpdateConstant(const GraphicContext& context)
 
 	cameraConstant.EyePosW = XMFLOAT4(mPosition.x, mPosition.y, mPosition.z, 1.0f);
 
-	cameraConstant.RenderTargetParam = XMFLOAT4(context.screenWidth, context.screenHeight, 1.0 / context.screenWidth, 1.0 / context.screenHeight);
 	cameraConstant.NearFar = XMFLOAT4(mNearZ, mFarZ, 0.0, 0.0);
 
 	context.frameResource->ConstantCamera->CopyData(cameraConstant);

@@ -30,11 +30,18 @@ void SkyboxPass::PreparePass(const GraphicContext& context)
 
     ThrowIfFailed(context.device->CreateRootSignature(0, serializedRootSig->GetBufferPointer(), serializedRootSig->GetBufferSize(), IID_PPV_ARGS(mSignature.GetAddressOf())));
 
-
+    // create pso
+    const D3D_SHADER_MACRO macros[] =
+    {
+#ifdef REVERSE_Z
+        "REVERSE_Z", "1",
+#endif
+        NULL, NULL
+    };
     ComPtr<ID3DBlob> vs = CompileShader(Globals::ShaderPath / "SkyboxPass.hlsl",
-        nullptr, "vs", "vs_5_1");
+        macros, "vs", "vs_5_1");
     ComPtr<ID3DBlob> ps = CompileShader(Globals::ShaderPath / "SkyboxPass.hlsl",
-        nullptr, "ps", "ps_5_1");
+        macros, "ps", "ps_5_1");
 
 
     D3D12_GRAPHICS_PIPELINE_STATE_DESC basePsoDesc;
@@ -56,7 +63,13 @@ void SkyboxPass::PreparePass(const GraphicContext& context)
     basePsoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_FRONT;
     basePsoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
     basePsoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
+
+#ifdef REVERSE_Z
+    basePsoDesc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_GREATER_EQUAL;
+#else
     basePsoDesc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
+#endif
+    
     basePsoDesc.SampleMask = UINT_MAX;
     basePsoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
     basePsoDesc.NumRenderTargets = 1;

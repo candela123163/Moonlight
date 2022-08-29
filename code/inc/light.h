@@ -10,6 +10,8 @@ struct DirectionalLight
     float Intensity;
     DirectX::XMFLOAT3 Direction;
     std::unique_ptr<RenderTexture> ShadowMaps[MAX_CASCADE_COUNT];
+
+    float NormalBias = 1.0f;
 };
 
 enum class CubeFaceID
@@ -38,6 +40,8 @@ struct PointLight
     DirectX::BoundingFrustum Frustum;
 
     DirectX::BoundingSphere BoundingSphere;
+
+    float NormalBias = 1.0f;
 
     DirectX::XMMATRIX GetViewProject(CubeFaceID face)
     {
@@ -72,6 +76,8 @@ struct SpotLight
     DirectX::XMMATRIX InvView;
     DirectX::XMMATRIX Project;
     DirectX::XMMATRIX ViewProject;
-    DirectX::XMMATRIX InViewProject;
+    DirectX::XMMATRIX InvViewProject;
     DirectX::BoundingFrustum Frustum;
+
+    float NormalBias = 1.0f;
 };

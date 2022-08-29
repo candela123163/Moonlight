@@ -25,6 +25,7 @@ void OpaqueLitPass::PreparePass(const GraphicContext& context)
     slotRootParameter[(int)RootSignatureParam::CameraConstant].InitAsConstantBufferView(2);
     slotRootParameter[(int)RootSignatureParam::LightConstant].InitAsConstantBufferView(3);
     slotRootParameter[(int)RootSignatureParam::IBLConstant].InitAsConstantBufferView(4);
+    slotRootParameter[(int)RootSignatureParam::ShadowConstant].InitAsConstantBufferView(5);
 
     slotRootParameter[(int)RootSignatureParam::Texture2DTable].InitAsDescriptorTable(1, &tex2dTable, D3D12_SHADER_VISIBILITY_PIXEL);
     slotRootParameter[(int)RootSignatureParam::TextureCubeTable].InitAsDescriptorTable(1, &texcubeTable, D3D12_SHADER_VISIBILITY_PIXEL);
@@ -45,11 +46,19 @@ void OpaqueLitPass::PreparePass(const GraphicContext& context)
 
     ThrowIfFailed(context.device->CreateRootSignature(0, serializedRootSig->GetBufferPointer(), serializedRootSig->GetBufferSize(), IID_PPV_ARGS(mSignature.GetAddressOf())));
 
+    // create pso
+    const D3D_SHADER_MACRO macros[] =
+    {
+#ifdef REVERSE_Z
+        "REVERSE_Z", "1",
+#endif
+        NULL, NULL
+    };
 
     ComPtr<ID3DBlob> vs = CompileShader(Globals::ShaderPath / "OpaqueLitPass.hlsl",
-        nullptr, "vs", "vs_5_1");
+        macros, "vs", "vs_5_1");
     ComPtr<ID3DBlob> ps = CompileShader(Globals::ShaderPath / "OpaqueLitPass.hlsl",
-        nullptr, "ps", "ps_5_1");
+        macros, "ps", "ps_5_1");
 
 
     D3D12_GRAPHICS_PIPELINE_STATE_DESC basePsoDesc;
@@ -69,6 +78,11 @@ void OpaqueLitPass::PreparePass(const GraphicContext& context)
     basePsoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
     basePsoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
     basePsoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
+
+#ifdef REVERSE_Z
+    basePsoDesc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_GREATER;
+#endif
+
     basePsoDesc.SampleMask = UINT_MAX;
     basePsoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
     basePsoDesc.NumRenderTargets = 1;
@@ -90,11 +104,18 @@ void OpaqueLitPass::DrawPass(const GraphicContext& context)
     context.commandList->SetGraphicsRootSignature(mSignature.Get());
     context.commandList->SetPipelineState(mPSO.Get());
 
-    context.commandList->SetGraphicsRootConstantBufferView((int)RootSignatureParam::CameraConstant, context.frameResource->ConstantCamera->GetElementGPUAddress());
-    context.commandList->SetGraphicsRootConstantBufferView((int)RootSignatureParam::LightConstant, context.frameResource->ConstantLight->GetElementGPUAddress());
-    context.commandList->SetGraphicsRootConstantBufferView((int)RootSignatureParam::IBLConstant, mIBLConstant->GetElementGPUAddress());
-    context.commandList->SetGraphicsRootDescriptorTable((int)RootSignatureParam::Texture2DTable, context.descriptorHeap->GetSrvHeap()->GetGPUDescriptorHandleForHeapStart());
-    context.commandList->SetGraphicsRootDescriptorTable((int)RootSignatureParam::TextureCubeTable, context.descriptorHeap->GetSrvHeap()->GetGPUDescriptorHandleForHeapStart());
+    context.commandList->SetGraphicsRootConstantBufferView((int)RootSignatureParam::CameraConstant,
+        context.frameResource->ConstantCamera->GetElementGPUAddress());
+    context.commandList->SetGraphicsRootConstantBufferView((int)RootSignatureParam::LightConstant,
+        context.frameResource->ConstantLight->GetElementGPUAddress());
+    context.commandList->SetGraphicsRootConstantBufferView((int)RootSignatureParam::IBLConstant,
+        mIBLConstant->GetElementGPUAddress());
+    context.commandList->SetGraphicsRootConstantBufferView((int)RootSignatureParam::ShadowConstant,
+        context.frameResource->ConstantShadow->GetElementGPUAddress());
+    context.commandList->SetGraphicsRootDescriptorTable((int)RootSignatureParam::Texture2DTable,
+        context.descriptorHeap->GetSrvHeap()->GetGPUDescriptorHandleForHeapStart());
+    context.commandList->SetGraphicsRootDescriptorTable((int)RootSignatureParam::TextureCubeTable,
+        context.descriptorHeap->GetSrvHeap()->GetGPUDescriptorHandleForHeapStart());
 
     Camera* camera = context.scene->GetCamera();
     camera->UpdateViewMatrix();

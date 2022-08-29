@@ -2,6 +2,8 @@
 
 #define NOMINMAX
 
+#define REVERSE_Z
+
 #include <windows.h>
 #include <wrl.h>
 #include <dxgi1_4.h>

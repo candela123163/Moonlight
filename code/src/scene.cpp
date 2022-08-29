@@ -269,7 +269,7 @@ bool Scene::LoadLight(const nlohmann::json& sceneConfig, const GraphicContext& c
         spotLight.Project = GenerateCubeProjectMatrix( M_PI_2, 1.0f, spotLight.Near, spotLight.Range);
 
         spotLight.ViewProject = XMMatrixMultiply(spotLight.View, spotLight.Project);
-        spotLight.InViewProject = XMMatrixInverse(get_rvalue_ptr(XMMatrixDeterminant(spotLight.ViewProject)), spotLight.ViewProject);
+        spotLight.InvViewProject = XMMatrixInverse(get_rvalue_ptr(XMMatrixDeterminant(spotLight.ViewProject)), spotLight.ViewProject);
         
         BoundingFrustum::CreateFromMatrix(spotLight.Frustum, spotLight.Project);
 
@@ -389,8 +389,8 @@ void Scene::UpdateLightConstant(const GraphicContext& context)
     for (size_t i = 0; i < mVisibleSpotLights.size(); i++)
     {
         const SpotLight* light = mVisibleSpotLights[i];
-        float innerCos = cosf(light->InnerAngle);
-        float outterCos = cosf(light->OutterAngle);
+        float innerCos = cosf(light->InnerAngle * 0.5f);
+        float outterCos = cosf(light->OutterAngle * 0.5f);
         float invAngleRange = 1.0f / max(innerCos - outterCos, 0.0001f);
 
         lightConstant.SpotLights[i] = {

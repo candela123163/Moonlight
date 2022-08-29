@@ -3,6 +3,7 @@
 #include "passBase.h"
 #include "util.h"
 #include "descriptor.h"
+#include "frameResource.h"
 using Microsoft::WRL::ComPtr;
 
 
@@ -19,13 +20,18 @@ private:
     void DrawSpotLightShadow(const GraphicContext& context);
     void DrawPointLightShadow(const GraphicContext& context);
 
+    void UpdateShadowConstant(const GraphicContext& context);
+
+    float CalcPerspectiveNormalBias(float baseBias,float fovY, float resolution);
+
     enum class RootSignatureParam
     {
         ObjectConstant = 0,
-        ShadowCasterConstant = 1,
-        Texture2DTable = 2,
+        MaterialConstant = 1,
+        ShadowCasterConstant = 2,
+        Texture2DTable = 3,
        
-        COUNT = 3
+        COUNT = 4
     };
   
 
@@ -33,4 +39,6 @@ private:
     ComPtr<ID3D12RootSignature> mSignature = nullptr;
     ComPtr< ID3D12PipelineState> mShadowPSO = nullptr;
     ComPtr< ID3D12PipelineState> mPointShadowPSO = nullptr;
+
+    ShadowConst mShadowConstant;
 };

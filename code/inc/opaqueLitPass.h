@@ -30,12 +30,13 @@ private:
         CameraConstant = 2,
         LightConstant = 3,
         IBLConstant = 4,
+        ShadowConstant = 5,
 
-        Texture2DTable = 5,
-        TextureCubeTable = 6,
+        Texture2DTable = 6,
+        TextureCubeTable = 7,
         
 
-        COUNT = 7
+        COUNT = 8
     };
 
 private:

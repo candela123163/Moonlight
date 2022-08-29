@@ -2,9 +2,11 @@
 #include "Constant.hlsli"
 
 DEFINE_OBJ_CONSTANT(b0)
-DEFINE_SHADOW_CASTER_CONSTANT(b1)
+DEFINE_MATERIAL_CONSTANT(b1)
+DEFINE_SHADOW_CASTER_CONSTANT(b2)
 
-Texture2D _Albedo : register(t0);
+#define TEXTURE_ARRAY_SIZE 128
+Texture2D _2DMaps[TEXTURE_ARRAY_SIZE] : register(t0);
 
 struct VertexIn
 {
@@ -30,7 +32,7 @@ v2f_shadow vs_shadow(VertexIn vin)
 
 void ps_shadow(v2f_shadow pin)
 {
-    float alpha = _Albedo.Sample(_SamplerLinearWrap, pin.uv).a;
+    float alpha = (_2DMaps[_AlbedoMapIndex].Sample(_SamplerAnisotropicWrap, pin.uv) * _AlbedoFactor).a;
     clip(alpha - 0.5f);
 }
 
@@ -52,9 +54,9 @@ v2f_point_shadow vs_point_shadow(VertexIn vin)
     return vout;
 }
 
-float ps_point_shadow(v2f_point_shadow pin)
+float ps_point_shadow(v2f_point_shadow pin) : SV_TARGET
 {
-    float alpha = _Albedo.Sample(_SamplerLinearWrap, pin.uv).a;
+    float alpha = (_2DMaps[_AlbedoMapIndex].Sample(_SamplerAnisotropicWrap, pin.uv) * _AlbedoFactor).a;
     clip(alpha - 0.5f);
     
     float dist = distance(_LightPosition.xyz, pin.posW);

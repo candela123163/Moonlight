@@ -22,7 +22,7 @@ struct MaterialConstant
     int AlbedoMapIndex;
     int NormalMapIndex;
     int MetalRoughMapIndex;
-    int Pad;
+    int pad;
 };
 
 
@@ -35,8 +35,6 @@ struct CameraConstant
     DirectX::XMFLOAT4X4 ViewProj;
     DirectX::XMFLOAT4X4 InvViewProj;
     DirectX::XMFLOAT4 EyePosW;
-    // render target (width, height, 1/width, 1/height)
-    DirectX::XMFLOAT4 RenderTargetParam;
     // camera (Znear, Zfar, null, null)
     DirectX::XMFLOAT4 NearFar;
 };
@@ -88,9 +86,44 @@ struct ShadowCasterConstant
     DirectX::XMFLOAT4X4 LightViewProject;
     // for point & spot light w is 1 / range
     DirectX::XMFLOAT3 LightPosition;
-    float LightRange;
+    float LightInvRange;
 };
 
+struct ShadowConst
+{
+    struct CascadeShadow
+    {
+        DirectX::XMFLOAT4X4 shadowTransform;
+        
+        int shadowMapIndex;
+        float cascadeDistance;
+        float normalBias;
+        float softValue;
+    };
+
+    struct PointShadow
+    {
+        int shadowMapIndex;
+        float normalBias;
+        DirectX::XMFLOAT2 pad;
+    };
+
+    struct SpotShadow
+    {
+        DirectX::XMFLOAT4X4 shadowTransform;
+
+        int shadowMapIndex;
+        float normalBias;
+        DirectX::XMFLOAT2 pad;
+    };
+
+    CascadeShadow ShadowCascade[MAX_CASCADE_COUNT];
+    PointShadow ShadowPoint[MAX_POINT_LIGHT_COUNT];
+    SpotShadow ShadowSpot[MAX_SPOT_LIGHT_COUNT];
+
+    float ShadowMaxDistance;
+    DirectX::XMFLOAT3 pad;
+};
 
 struct FrameResources
 {
@@ -106,6 +139,7 @@ struct FrameResources
 
     std::unique_ptr<UploadBuffer<CameraConstant, true>> ConstantCamera;
     std::unique_ptr<UploadBuffer<LightConstant, true>> ConstantLight;
+    std::unique_ptr<UploadBuffer<ShadowConst, true>> ConstantShadow;
     std::unique_ptr<UploadBuffer<ShadowCasterConstant, true>> ConstantShadowCaster;
 
     std::unique_ptr<UploadBuffer<ObjectConstant, true>> ConstantObject;

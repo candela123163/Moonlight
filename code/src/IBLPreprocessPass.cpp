@@ -64,15 +64,24 @@ void IBLPreprocessPass::PreparePass(const GraphicContext& context)
 
 
     // ------------------- pso ------------------- 
+
+    const D3D_SHADER_MACRO macros[] =
+    {
+#ifdef REVERSE_Z
+        "REVERSE_Z", "1",
+#endif
+        NULL, NULL
+    };
+
     ComPtr<ID3DBlob> vs1 = CompileShader(Globals::ShaderPath / "IrradianceMapPass.hlsl",
-        nullptr, "vs", "vs_5_1");
+        macros, "vs", "vs_5_1");
     ComPtr<ID3DBlob> ps1 = CompileShader(Globals::ShaderPath / "IrradianceMapPass.hlsl",
-        nullptr, "ps", "ps_5_1");
+        macros, "ps", "ps_5_1");
 
     ComPtr<ID3DBlob> vs2 = CompileShader(Globals::ShaderPath / "PrefilterMapPass.hlsl",
-        nullptr, "vs", "vs_5_1");
+        macros, "vs", "vs_5_1");
     ComPtr<ID3DBlob> ps2 = CompileShader(Globals::ShaderPath / "PrefilterMapPass.hlsl",
-        nullptr, "ps", "ps_5_1");
+        macros, "ps", "ps_5_1");
 
 
     D3D12_GRAPHICS_PIPELINE_STATE_DESC irradiancePsoDesc;
@@ -98,10 +107,10 @@ void IBLPreprocessPass::PreparePass(const GraphicContext& context)
     irradiancePsoDesc.SampleMask = UINT_MAX;
     irradiancePsoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
     irradiancePsoDesc.NumRenderTargets = 1;
-    irradiancePsoDesc.RTVFormats[0] = context.backBufferFormat;
+    irradiancePsoDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
     irradiancePsoDesc.SampleDesc.Count = 1;
     irradiancePsoDesc.SampleDesc.Quality = 0;
-    irradiancePsoDesc.DSVFormat = context.depthStencilFormat;
+    irradiancePsoDesc.DSVFormat = DXGI_FORMAT_UNKNOWN;
 
     ThrowIfFailed(context.device->CreateGraphicsPipelineState(&irradiancePsoDesc, IID_PPV_ARGS(mIrradiancePSO.GetAddressOf())));
 

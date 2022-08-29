@@ -7,6 +7,7 @@
 #include "skyBoxPass.h"
 #include "opaqueLitPass.h"
 #include "IBLPreprocessPass.h"
+#include "shadowPass.h"
 using namespace DirectX;
 using namespace std;
 
@@ -386,7 +387,11 @@ void GameApp::CreateDefaultRtvDsv()
 
 	D3D12_CLEAR_VALUE optClear;
 	optClear.Format = mDepthStencilFormat;
+#ifdef REVERSE_Z
+	optClear.DepthStencil.Depth = 0.0f;
+#else
 	optClear.DepthStencil.Depth = 1.0f;
+#endif
 	optClear.DepthStencil.Stencil = 0;
 	ThrowIfFailed(md3dDevice->CreateCommittedResource(
 		get_rvalue_ptr(CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT)),
@@ -449,6 +454,7 @@ void GameApp::PreparePasses()
 {
 	// load pass
 	mPasses.push_back(make_unique<IBLPreprocessPass>());
+	mPasses.push_back(make_unique<ShadowPass>());
 	mPasses.push_back(make_unique<OpaqueLitPass>());
 	mPasses.push_back(make_unique<SkyboxPass>());
 	mPasses.push_back(make_unique<DebugPass>());
@@ -574,7 +580,13 @@ void GameApp::Draw()
 
 	mCommandList->ResourceBarrier(1, get_rvalue_ptr(CD3DX12_RESOURCE_BARRIER::Transition(CurrentBackBuffer(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET)));
 	mCommandList->ClearRenderTargetView(CurrentBackBufferView(), DirectX::Colors::LightSteelBlue, 0, nullptr);
-	mCommandList->ClearDepthStencilView(DepthStencilView(), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
+
+#ifdef REVERSE_Z
+	float zClearValue = 0.0f;
+#else
+	float zClearValue = 1.0f;
+#endif
+	mCommandList->ClearDepthStencilView(DepthStencilView(), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, zClearValue, 0, 0, nullptr);
 
 	DrawPasses();
 

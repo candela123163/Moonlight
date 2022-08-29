@@ -7,7 +7,7 @@
 
 
 // --------- textures ---------------------------------------------
-#define TEXTURE_ARRAY_SIZE 256
+#define TEXTURE_ARRAY_SIZE 128
 Texture2D _2DMaps[TEXTURE_ARRAY_SIZE] : register(t0, space0);
 TextureCube _CubeMaps[TEXTURE_ARRAY_SIZE] : register(t0, space1);
 // ----------------------------------------------------------------
@@ -27,6 +27,8 @@ cbuffer IBLConstant : register(b4)
     int _BRDFLUTIndex;
     int _PrefilterMapMipCount;
 }
+
+DEFINE_SHADOW_CONSTANT(b5)
 
 // ---------------------------------------------------------------
 
@@ -73,6 +75,12 @@ float3 GetEnvIrradiance(float3 dir)
 float3 GetEnvPrefilteredColor(float3 dir, float roughness)
 {
     return _CubeMaps[_PrefilterMapIndex].SampleLevel(_SamplerLinearClamp, dir, roughness * _PrefilterMapMipCount);
+}
+
+float GetSpotShadowMapValue(uint index, float2 uv, float compareDepth)
+{
+    uint mapIndex = _ShadowPoint[index].shadowMapIndex;
+    return _2DMaps[mapIndex].SampleCmpLevelZero(_SamplerShadow, uv, compareDepth).r;
 }
 // ---------------------------------------------------------------
 #endif
