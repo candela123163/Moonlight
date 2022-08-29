@@ -194,7 +194,7 @@ bool Scene::LoadLight(const nlohmann::json& sceneConfig, const GraphicContext& c
             context.device, context.descriptorHeap,
             POINT_LIGHT_SHADOWMAP_RESOLUTION, POINT_LIGHT_SHADOWMAP_RESOLUTION,
             6, 1, TextureDimension::CubeMap,
-            RenderTextureUsage::DepthBuffer, DXGI_FORMAT_D32_FLOAT
+            RenderTextureUsage::ColorBuffer, DXGI_FORMAT_R32_FLOAT
             );
         
         auto views = GenerateCubeViewMatrices(XMLoadFloat3(&pointLight.Position));
@@ -387,7 +387,7 @@ void Scene::UpdateLightConstant(const GraphicContext& context)
             light->Color,
             light->Intensity,
             light->Position,
-            1.0f / max(0.0001f,light->Range * light->Range)
+            1.0f / max(0.0001f, light->Range)
         };
     }
 
@@ -401,7 +401,7 @@ void Scene::UpdateLightConstant(const GraphicContext& context)
 
         lightConstant.SpotLights[i] = {
             light->Color,
-            1.0f / max(0.0001f, light->Range * light->Range),
+            1.0f / max(0.0001f, light->Range),
             light->Position,
             invAngleRange,
             light->Direction,

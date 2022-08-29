@@ -457,7 +457,7 @@ void GameApp::PreparePasses()
 	mPasses.push_back(make_unique<ShadowPass>());
 	mPasses.push_back(make_unique<OpaqueLitPass>());
 	mPasses.push_back(make_unique<SkyboxPass>());
-	mPasses.push_back(make_unique<DebugPass>());
+	//mPasses.push_back(make_unique<DebugPass>());
 
 	for (auto& pass : mPasses) {
 		pass->PreparePass(mGraphicContext);

@@ -44,4 +44,5 @@ VertexOut vs(uint vid : SV_VertexID)
 float4 ps(VertexOut pin) : SV_TARGET
 {
     return float4(_2DMaps[mapIndices[0]].Sample(_SamplerLinearClamp, pin.TexC).rrr, 1.0f);
+    
 }

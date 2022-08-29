@@ -122,25 +122,25 @@ float RadiansToDegree(float radians)
 }
 
 
+static FXMVECTOR looks[6] = {
+    XMLoadFloat3(get_rvalue_ptr(XMFLOAT3(1.0, 0.0, 0.0))),  // +X
+    XMLoadFloat3(get_rvalue_ptr(XMFLOAT3(-1.0, 0.0, 0.0))), // -X
+    XMLoadFloat3(get_rvalue_ptr(XMFLOAT3(0.0, 1.0, 0.0))),  // +Y
+    XMLoadFloat3(get_rvalue_ptr(XMFLOAT3(0.0, -1.0, 0.0))), // -Y
+    XMLoadFloat3(get_rvalue_ptr(XMFLOAT3(0.0, 0.0, 1.0))),  // +Z
+    XMLoadFloat3(get_rvalue_ptr(XMFLOAT3(0.0, 0.0, -1.0)))  // -Z
+};
+static FXMVECTOR ups[6] = {
+    XMLoadFloat3(get_rvalue_ptr(XMFLOAT3(0.0, 1.0, 0.0))),  // +X
+    XMLoadFloat3(get_rvalue_ptr(XMFLOAT3(0.0, 1.0, 0.0))),  // -X
+    XMLoadFloat3(get_rvalue_ptr(XMFLOAT3(0.0, 0.0, -1.0))), // +Y
+    XMLoadFloat3(get_rvalue_ptr(XMFLOAT3(0.0, 0.0, 1.0))),  // -Y
+    XMLoadFloat3(get_rvalue_ptr(XMFLOAT3(0.0, 1.0, 0.0))),  // +Z
+    XMLoadFloat3(get_rvalue_ptr(XMFLOAT3(0.0, 1.0, 0.0)))   // -Z
+};
+
 array<FXMMATRIX, 6> GenerateCubeViewMatrices(FXMVECTOR pos)
 {
-    static FXMVECTOR looks[6] = {
-        XMLoadFloat3(get_rvalue_ptr(XMFLOAT3(1.0, 0.0, 0.0))),  // +X
-        XMLoadFloat3(get_rvalue_ptr(XMFLOAT3(-1.0, 0.0, 0.0))), // -X
-        XMLoadFloat3(get_rvalue_ptr(XMFLOAT3(0.0, 1.0, 0.0))),  // +Y
-        XMLoadFloat3(get_rvalue_ptr(XMFLOAT3(0.0, -1.0, 0.0))), // -Y
-        XMLoadFloat3(get_rvalue_ptr(XMFLOAT3(0.0, 0.0, 1.0))),  // +Z
-        XMLoadFloat3(get_rvalue_ptr(XMFLOAT3(0.0, 0.0, -1.0)))  // -Z
-    };
-    static FXMVECTOR ups[6] = {
-        XMLoadFloat3(get_rvalue_ptr(XMFLOAT3(0.0, 1.0, 0.0))),  // +X
-        XMLoadFloat3(get_rvalue_ptr(XMFLOAT3(0.0, 1.0, 0.0))),  // -X
-        XMLoadFloat3(get_rvalue_ptr(XMFLOAT3(0.0, 0.0, -1.0))), // +Y
-        XMLoadFloat3(get_rvalue_ptr(XMFLOAT3(0.0, 0.0, 1.0))),  // -Y
-        XMLoadFloat3(get_rvalue_ptr(XMFLOAT3(0.0, 1.0, 0.0))),  // +Z
-        XMLoadFloat3(get_rvalue_ptr(XMFLOAT3(0.0, 1.0, 0.0)))   // -Z
-    };
-
     return {
         XMMatrixLookToLH(pos, looks[0], ups[0]),
         XMMatrixLookToLH(pos, looks[1], ups[1]),
@@ -150,6 +150,11 @@ array<FXMMATRIX, 6> GenerateCubeViewMatrices(FXMVECTOR pos)
         XMMatrixLookToLH(pos, looks[5], ups[5])
     };
 
+}
+
+XMVECTOR GetCubeFaceNormal(UINT face)
+{
+    return looks[face];
 }
 
 bool Intersects(

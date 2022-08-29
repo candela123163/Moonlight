@@ -49,13 +49,13 @@ struct LightConstant
         float Intensity;
         
         DirectX::XMFLOAT3 Position;
-        float InvSquareRange;
+        float InvRange;
     };
 
     struct SpotLight
     {
         DirectX::XMFLOAT3 Color;
-        float InvSquareRange;
+        float InvRange;
 
         DirectX::XMFLOAT3 Position;
         float AttenuationFactorA;
@@ -97,14 +97,14 @@ struct ShadowConst
         
         int shadowMapIndex;
         float cascadeDistance;
-        float normalBias;
+        float shadowBias;
         float softValue;
     };
 
     struct PointShadow
     {
         int shadowMapIndex;
-        float normalBias;
+        float shadowBias;
         DirectX::XMFLOAT2 pad;
     };
 
@@ -113,7 +113,7 @@ struct ShadowConst
         DirectX::XMFLOAT4X4 shadowTransform;
 
         int shadowMapIndex;
-        float normalBias;
+        float shadowBias;
         DirectX::XMFLOAT2 pad;
     };
 

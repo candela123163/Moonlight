@@ -125,6 +125,8 @@ float RadiansToDegree(float radians);
 
 std::array<DirectX::FXMMATRIX, 6> GenerateCubeViewMatrices(DirectX::FXMVECTOR pos);
 
+DirectX::XMVECTOR GetCubeFaceNormal(UINT face);
+
 // intersect test
 bool Intersects(
     const DirectX::BoundingFrustum& frustum,

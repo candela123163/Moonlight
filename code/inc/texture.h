@@ -92,11 +92,22 @@ public:
 
     void SetViewPort(ID3D12GraphicsCommandList* commandList, UINT mipLevel = 0);
 
+    const DescriptorData& GetRtvDescriptorData() const { return mRtvDescriptorData; }
+
     void SetAsRenderTarget(ID3D12GraphicsCommandList* commandList,
         UINT depthSlice, UINT mipLevel,
-        UINT otherRTVNum = 0, D3D12_CPU_DESCRIPTOR_HANDLE* otherRTVHandles = nullptr,
-        D3D12_CPU_DESCRIPTOR_HANDLE* otherDSVHandles = nullptr
+        UINT otherRTVNum = 0, const D3D12_CPU_DESCRIPTOR_HANDLE* otherRTVHandles = nullptr,
+        const D3D12_CPU_DESCRIPTOR_HANDLE* otherDSVHandles = nullptr
     );
+
+    void SetAsRenderTarget(ID3D12GraphicsCommandList* commandList,
+        UINT depthSlice, UINT mipLevel,
+        const RenderTexture& other, UINT otherDepthSlice, UINT otherMipLevel
+    );
+
+    void Clear(ID3D12GraphicsCommandList* commandList, UINT depthSlice, UINT mipLevel);
+
+    RenderTextureUsage GetUsage() const { return mUsage; }
 
 private:
     void GetSRVDes(D3D12_SHADER_RESOURCE_VIEW_DESC& outDesc) override;

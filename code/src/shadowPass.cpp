@@ -4,7 +4,9 @@
 #include "mesh.h"
 #include "scene.h"
 #include "light.h"
+#include "texture.h"
 using namespace DirectX;
+using namespace std;
 
 const XMMATRIX ShadowPass::mTexCoordTransform = XMMATRIX(
     0.5f, 0.0f, 0.0f, 0.0f,
@@ -89,14 +91,14 @@ void ShadowPass::PreparePass(const GraphicContext& context)
     shadowPsoDesc.RTVFormats[0] = DXGI_FORMAT_UNKNOWN;
     shadowPsoDesc.SampleDesc.Count = 1;
     shadowPsoDesc.SampleDesc.Quality = 0;
-    shadowPsoDesc.DSVFormat = context.depthStencilFormat;
+    shadowPsoDesc.DSVFormat = DXGI_FORMAT_D32_FLOAT;
 
     ThrowIfFailed(context.device->CreateGraphicsPipelineState(&shadowPsoDesc, IID_PPV_ARGS(mShadowPSO.GetAddressOf())));
 
     // point shadow
     D3D12_GRAPHICS_PIPELINE_STATE_DESC pointShadowPsoDesc = shadowPsoDesc;
-    pointShadowPsoDesc.NumRenderTargets = 0;
-    pointShadowPsoDesc.RTVFormats[0] = DXGI_FORMAT_UNKNOWN;
+    pointShadowPsoDesc.NumRenderTargets = 1;
+    pointShadowPsoDesc.RTVFormats[0] = DXGI_FORMAT_R32_FLOAT;
     pointShadowPsoDesc.DSVFormat = DXGI_FORMAT_D32_FLOAT;
     pointShadowPsoDesc.VS =
     {
@@ -111,7 +113,15 @@ void ShadowPass::PreparePass(const GraphicContext& context)
 
     ThrowIfFailed(context.device->CreateGraphicsPipelineState(&pointShadowPsoDesc, IID_PPV_ARGS(mPointShadowPSO.GetAddressOf())));
 
-
+    size_t shadowMapKey = hash<string>()("ShadowDepthMap");
+    mShadowDepthMap = Globals::RenderTextureContainer.Insert(
+        shadowMapKey,
+        make_unique<RenderTexture>(
+            context.device, context.descriptorHeap, POINT_LIGHT_SHADOWMAP_RESOLUTION, POINT_LIGHT_SHADOWMAP_RESOLUTION,
+            6, 1, TextureDimension::Tex2D,
+            RenderTextureUsage::DepthBuffer, DXGI_FORMAT_D32_FLOAT
+            )
+    );
 }
 
 void ShadowPass::PreprocessPass(const GraphicContext& context)
@@ -154,17 +164,18 @@ void ShadowPass::DrawSpotLightShadow(const GraphicContext& context)
     {
         const SpotLight* spotLight = spotLights[i];
         
-        ShadowCasterConstant pointShadowConstant;
-        XMStoreFloat4x4(&pointShadowConstant.LightViewProject, XMMatrixTranspose(spotLight->ViewProject));
+        ShadowCasterConstant spotShadowConstant;
+        XMStoreFloat4x4(&spotShadowConstant.LightViewProject, XMMatrixTranspose(spotLight->ViewProject));
         
-        pointShadowConstant.LightPosition = spotLight->Position;
-        pointShadowConstant.LightInvRange = 1.0f / spotLight->Range;
-        context.frameResource->ConstantShadowCaster->CopyData(pointShadowConstant, spotConstantOffset + i);
+        spotShadowConstant.LightPosition = spotLight->Position;
+        spotShadowConstant.LightInvRange = 1.0f / spotLight->Range ;
+        context.frameResource->ConstantShadowCaster->CopyData(spotShadowConstant, spotConstantOffset + i);
         context.commandList->SetGraphicsRootConstantBufferView(
             (int)RootSignatureParam::ShadowCasterConstant,
             context.frameResource->ConstantShadowCaster->GetElementGPUAddress(spotConstantOffset + i));
         
         spotLight->ShadowMap->TransitionTo(context.commandList, RenderTextureState::Write);
+        spotLight->ShadowMap->Clear(context.commandList, 0, 0);
         spotLight->ShadowMap->SetAsRenderTarget(context.commandList, 0, 0);
 
         const auto& instances = context.scene->GetVisibleRenderInstances(
@@ -196,7 +207,7 @@ void ShadowPass::DrawSpotLightShadow(const GraphicContext& context)
         mShadowConstant.ShadowSpot[i] = {
             viewProject,
             static_cast<int>(spotLight->ShadowMap->GetSrvDescriptorData().HeapIndex),
-            CalcPerspectiveNormalBias(spotLight->NormalBias, spotLight->OutterAngle, spotLight->ShadowMap->GetWidth()),
+            CalcPerspectiveNormalBias(spotLight->ShadowBias, spotLight->OutterAngle, spotLight->ShadowMap->GetWidth()),
             XMFLOAT2(0, 0)
         };
     }
@@ -204,7 +215,61 @@ void ShadowPass::DrawSpotLightShadow(const GraphicContext& context)
 
 void ShadowPass::DrawPointLightShadow(const GraphicContext& context)
 {
+    UINT pointConstantOffset = MAX_CASCADE_COUNT + MAX_SPOT_LIGHT_COUNT;
 
+    const auto& pointLights = context.scene->GetVisiblePointLights();
+    for (size_t i = 0; i < pointLights.size(); i++)
+    {
+        const PointLight* pointLight = pointLights[i];
+        pointLight->ShadowMap->TransitionTo(context.commandList, RenderTextureState::Write);
+
+        for (size_t face = 0; face < 6; face++)
+        {
+            ShadowCasterConstant pointShadowConstant;
+            XMStoreFloat4x4(&pointShadowConstant.LightViewProject, XMMatrixTranspose(pointLight->GetViewProject(face)));
+
+            pointShadowConstant.LightPosition = pointLight->Position;
+            pointShadowConstant.LightInvRange = 1.0f / pointLight->Range;
+            context.frameResource->ConstantShadowCaster->CopyData(pointShadowConstant, pointConstantOffset + i * 6 + face);
+            context.commandList->SetGraphicsRootConstantBufferView(
+                (int)RootSignatureParam::ShadowCasterConstant,
+                context.frameResource->ConstantShadowCaster->GetElementGPUAddress(pointConstantOffset + i * 6 + face));
+
+            mShadowDepthMap->Clear(context.commandList, 0, 0);
+            pointLight->ShadowMap->Clear(context.commandList, face, 0);
+            pointLight->ShadowMap->SetAsRenderTarget(context.commandList, face, 0, *mShadowDepthMap, 0, 0);
+
+            const auto& instances = context.scene->GetVisibleRenderInstances(
+                pointLight->Frustum, pointLight->GetInvView(face),
+                XMLoadFloat3(&pointLight->Position), GetCubeFaceNormal(face)
+            );
+
+            int currMaterialID = -1;
+            for (auto instance : instances)
+            {
+                context.commandList->SetGraphicsRootConstantBufferView(
+                    (int)RootSignatureParam::ObjectConstant,
+                    context.frameResource->ConstantObject->GetElementGPUAddress(instance->GetID()));
+                // set material if need
+                if (currMaterialID != instance->GetMaterial()->GetID())
+                {
+                    currMaterialID = instance->GetMaterial()->GetID();
+                    context.commandList->SetGraphicsRootConstantBufferView((int)RootSignatureParam::MaterialConstant,
+                        context.frameResource->ConstantMaterial->GetElementGPUAddress(currMaterialID));
+                }
+
+                instance->GetMesh()->Draw(context.commandList);
+            }
+        }
+
+        pointLight->ShadowMap->TransitionTo(context.commandList, RenderTextureState::Read);
+
+        mShadowConstant.ShadowPoint[i] = {
+            static_cast<int>(pointLight->ShadowMap->GetSrvDescriptorData().HeapIndex),
+            CalcPerspectiveNormalBias(pointLight->ShadowBias, M_PI_2, pointLight->ShadowMap->GetWidth()),
+            XMFLOAT2(0, 0)
+        };
+    }
 }
 
 void ShadowPass::UpdateShadowConstant(const GraphicContext& context)

@@ -22,45 +22,31 @@
 
     "PointLights":[
         {
-            "Position": [ -6.0, 2.0, 0.0 ],
+            "Position": [ -6.0, 2.0, 0.5 ],
             "Color": [ 1.0, 0.0, 0.0 ],
-            "Intensity": 3.0,
+            "Intensity": 10.0,
             "Near": 0.3,
-            "Range": 5.0
+            "Range": 3.0
         },
 
         {
-            "Position": [ -2.0, 2.0, 0.0 ],
+            "Position": [ 6.0, 2.0, 0.5 ],
             "Color": [ 0.0, 1.0, 0.0 ],
-            "Intensity": 3.0,
+            "Intensity": 10.0,
             "Near": 0.3,
-            "Range": 5.0
-        },
+            "Range": 3.0
+        }
 
-        {
-            "Position": [ 2.0, 2.0, 0.0 ],
-            "Color": [ 0.0, 0.0, 1.0 ],
-            "Intensity": 3.0,
-            "Near": 0.3,
-            "Range": 5.0
-        },
-
-        {
-            "Position": [ 6.0, 2.0, 0.0 ],
-            "Color": [ 1.0, 0.0, 1.0 ],
-            "Intensity": 3.0,
-            "Near": 0.3,
-            "Range": 5.0
-        }],
+    ],
 
     "SpotLights":[
         {
             "Position": [ 0.0, 2.0, 0.5 ],
             "Color": [ 0.89, 0.72, 0.05 ],
-            "Intensity": 100.0,
+            "Intensity": 10.0,
             "Direction": [ 1.0, -1.0, 1.0 ],
             "Near": 0.3,
-            "Range": 10.0,
+            "Range": 5.0,
             "OutterAngle": 60.0,
             "InnerAngle": 45.0
         }

@@ -151,7 +151,11 @@ RenderTexture::RenderTexture(ID3D12Device* device, DescriptorHeap* descriptorHea
     else
     {
         texDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
+#ifdef REVERSE_Z
+        optClear.DepthStencil.Depth = 0.0f;
+#else
         optClear.DepthStencil.Depth = 1.0f;
+#endif
         optClear.DepthStencil.Stencil = 0;
     }
     
@@ -297,7 +301,15 @@ void RenderTexture::BindRTV(ID3D12Device* device,
 
 void RenderTexture::BindRTV(ID3D12Device* device, DescriptorHeap* descriptorHeap)
 {
-    mRtvDescriptorData = descriptorHeap->GetNextnRtvDescriptor(mMipCount * mDepthCount);
+    if (mUsage == RenderTextureUsage::ColorBuffer)
+    {
+        mRtvDescriptorData = descriptorHeap->GetNextnRtvDescriptor(mMipCount * mDepthCount);
+    }
+    else
+    {
+        mRtvDescriptorData = descriptorHeap->GetNextnDsvDescriptor(mMipCount * mDepthCount);
+    }
+    
     CD3DX12_CPU_DESCRIPTOR_HANDLE cpuHandle = mRtvDescriptorData.CPUHandle;
     for (size_t i = 0; i < mDepthCount; i++)
     {
@@ -330,12 +342,12 @@ void RenderTexture::SetViewPort(ID3D12GraphicsCommandList* commandList, UINT mip
 
 void RenderTexture::SetAsRenderTarget(ID3D12GraphicsCommandList* commandList,
     UINT depthSlice, UINT mipLevel,
-    UINT otherRTVNum, D3D12_CPU_DESCRIPTOR_HANDLE* otherRTVHandles,
-    D3D12_CPU_DESCRIPTOR_HANDLE* otherDSVHandles
+    UINT otherRTVNum, const D3D12_CPU_DESCRIPTOR_HANDLE* otherRTVHandles,
+    const D3D12_CPU_DESCRIPTOR_HANDLE* otherDSVHandles
 )
 {
     UINT rtvNum = 0;
-    D3D12_CPU_DESCRIPTOR_HANDLE* rtvHandles = nullptr, * dsvHandles = nullptr;
+    const D3D12_CPU_DESCRIPTOR_HANDLE* rtvHandles = nullptr, * dsvHandles = nullptr;
 
     CD3DX12_CPU_DESCRIPTOR_HANDLE cpuHandle = mRtvDescriptorData.CPUHandle;
     cpuHandle.Offset(mMipCount * depthSlice + mipLevel, mRtvDescriptorData.IncrementSize);
@@ -345,24 +357,62 @@ void RenderTexture::SetAsRenderTarget(ID3D12GraphicsCommandList* commandList,
         rtvNum = otherRTVNum;
         rtvHandles = otherRTVHandles;
         dsvHandles = &cpuHandle;
-#ifdef REVERSE_Z    
-        float zClearValue = 0.0f;
-#else
-        float zClearValue = 1.0f;
-#endif
-        commandList->ClearDepthStencilView(cpuHandle, 
-            D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 
-            zClearValue, 0, 0, nullptr);
     }
     else
     {
         rtvNum = 1;
         rtvHandles = &cpuHandle;
         dsvHandles = otherDSVHandles;
-        float clearValue[] = { 0.0f, 0.0f, 0.0f, 0.0f };
-        commandList->ClearRenderTargetView(cpuHandle, clearValue, 0, nullptr);
     }
 
     SetViewPort(commandList, mipLevel);
     commandList->OMSetRenderTargets(rtvNum, rtvHandles, false, dsvHandles);
+}
+
+void RenderTexture::SetAsRenderTarget(ID3D12GraphicsCommandList* commandList,
+    UINT depthSlice, UINT mipLevel,
+    const RenderTexture& other, UINT otherDepthSlice, UINT otherMipLevel
+)
+{
+    UINT otherRTVNum = 0;
+    const D3D12_CPU_DESCRIPTOR_HANDLE* otherRTVHandles = nullptr;
+    const D3D12_CPU_DESCRIPTOR_HANDLE* otherDSVHandles = nullptr;
+
+    CD3DX12_CPU_DESCRIPTOR_HANDLE cpuHandle = other.GetRtvDescriptorData().CPUHandle;
+    cpuHandle.Offset(other.GetMipCount() * otherDepthSlice + otherMipLevel, mRtvDescriptorData.IncrementSize);
+
+    if (other.GetUsage() == RenderTextureUsage::ColorBuffer)
+    {
+        otherRTVNum = 1;
+        otherRTVHandles = &cpuHandle;
+    }
+    else
+    {
+        otherDSVHandles = &cpuHandle;
+    }
+
+    SetAsRenderTarget(commandList, depthSlice, mipLevel, otherRTVNum, otherRTVHandles, otherDSVHandles);
+}
+
+void RenderTexture::Clear(ID3D12GraphicsCommandList* commandList, UINT depthSlice, UINT mipLevel)
+{
+    CD3DX12_CPU_DESCRIPTOR_HANDLE cpuHandle = mRtvDescriptorData.CPUHandle;
+    cpuHandle.Offset(mMipCount * depthSlice + mipLevel, mRtvDescriptorData.IncrementSize);
+
+    if (mUsage == RenderTextureUsage::DepthBuffer)
+    {
+#ifdef REVERSE_Z    
+        float zClearValue = 0.0f;
+#else
+        float zClearValue = 1.0f;
+#endif
+        commandList->ClearDepthStencilView(cpuHandle,
+            D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL,
+            zClearValue, 0, 0, nullptr);
+    }
+    else
+    {
+        float clearValue[] = { 0.0f, 0.0f, 0.0f, 0.0f };
+        commandList->ClearRenderTargetView(cpuHandle, clearValue, 0, nullptr);
+    }
 }

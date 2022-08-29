@@ -6,6 +6,7 @@
 #include "frameResource.h"
 using Microsoft::WRL::ComPtr;
 
+class RenderTexture;
 
 class ShadowPass final : public PassBase
 {
@@ -39,6 +40,8 @@ private:
     ComPtr<ID3D12RootSignature> mSignature = nullptr;
     ComPtr< ID3D12PipelineState> mShadowPSO = nullptr;
     ComPtr< ID3D12PipelineState> mPointShadowPSO = nullptr;
+
+    RenderTexture* mShadowDepthMap;
 
     ShadowConst mShadowConstant;
     

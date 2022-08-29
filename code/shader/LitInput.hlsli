@@ -100,11 +100,8 @@ float GetSunShadowMapValue(uint cascade, float2 uv, float compareDepth)
 float GetPointShadowMapValue(uint index, float3 dir, float compareDepth)
 {
     uint mapIndex = _ShadowPoint[index].shadowMapIndex;
-#ifdef REVERSE_Z
-    return _CubeMaps[mapIndex].SampleCmpLevelZero(_SamplerShadowGreater, dir, compareDepth).r;
-#else
     return _CubeMaps[mapIndex].SampleCmpLevelZero(_SamplerShadowLess, dir, compareDepth).r;
-#endif
+
 }
 
 float4 GetSpotShadowMapSize(uint index)

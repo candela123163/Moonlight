@@ -162,6 +162,7 @@ void IBLPreprocessPass::PreprocessPass(const GraphicContext& context)
     mIrradianceMap->TransitionTo(context.commandList, RenderTextureState::Write);
     for (size_t i = 0; i < 6; i++)
     {
+        mIrradianceMap->Clear(context.commandList, i, 0);
         mIrradianceMap->SetAsRenderTarget(context.commandList, i, 0);
         context.commandList->SetGraphicsRootConstantBufferView((int)RootSignatureParam::IBLConstant, mConstant->GetElementGPUAddress(i));
         skybox.mesh->Draw(context.commandList);
@@ -182,6 +183,7 @@ void IBLPreprocessPass::PreprocessPass(const GraphicContext& context)
         context.commandList->SetGraphicsRoot32BitConstants((int)RootSignatureParam::Constant32, 2, &constant32, 0);
         for (size_t face = 0; face < 6; face++)
         {
+            mPrefilterMap->Clear(context.commandList, face, filterLevel);
             mPrefilterMap->SetAsRenderTarget(context.commandList, face, filterLevel);
             context.commandList->SetGraphicsRootConstantBufferView((int)RootSignatureParam::IBLConstant, mConstant->GetElementGPUAddress(face));
             skybox.mesh->Draw(context.commandList);

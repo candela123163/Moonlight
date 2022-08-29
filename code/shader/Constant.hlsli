@@ -48,13 +48,13 @@ struct PointLight
     float Intensity;
     
     float3 Position;
-    float InvSquareRange;
+    float InvRange;
 };
 
 struct SpotLight
 {
     float3 Color;
-    float InvSquareRange;
+    float InvRange;
     
     float3 Position;
     float AttenuationFactorA;
@@ -96,14 +96,14 @@ struct CascadeShadow
         
     int shadowMapIndex;
     float cascadeDistance;
-    float normalBias;
+    float shadowBias;
     float softValue;
 };
 
 struct PointShadow
 {
     int shadowMapIndex;
-    float normalBias;
+    float shadowBias;
     float2 pad;
 };
 
@@ -112,7 +112,7 @@ struct SpotShadow
     float4x4 shadowTransform;
 
     int shadowMapIndex;
-    float normalBias;
+    float shadowBias;
     float2 pad;
 };
 

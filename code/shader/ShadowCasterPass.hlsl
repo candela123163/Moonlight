@@ -58,7 +58,6 @@ float ps_point_shadow(v2f_point_shadow pin) : SV_TARGET
 {
     float alpha = (_2DMaps[_AlbedoMapIndex].Sample(_SamplerAnisotropicWrap, pin.uv) * _AlbedoFactor).a;
     clip(alpha - 0.5f);
-    
-    float dist = distance(_LightPosition.xyz, pin.posW);
-    return dist * _LightInvRange;
+        
+    return distance(pin.posW, _LightPosition.xyz) * _LightInvRange;
 }

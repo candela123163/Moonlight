@@ -35,10 +35,10 @@ Light GetPointLight(uint index, Surface surface)
     float rangeAttenuation = 
     Square(
         saturate(
-            1.0f - Square(squareDistance * pointLight.InvSquareRange)
+            1.0f - Square(squareDistance * pointLight.InvRange * pointLight.InvRange)
         )
     ) / squareDistance;
-    light.attenuation = rangeAttenuation;
+    light.attenuation = rangeAttenuation * GetPointShadowAttenuation(surface, index);
     
     return light;
 }
@@ -61,7 +61,7 @@ Light GetSpotLight(uint index, Surface surface)
     float rangeAttenuation = 
         Square(
             saturate(
-                1.0f - Square(squareDistance * spotLight.InvSquareRange)
+                1.0f - Square(squareDistance * spotLight.InvRange * spotLight.InvRange)
             )
         ) / squareDistance;
     float spotAttenuation = 
