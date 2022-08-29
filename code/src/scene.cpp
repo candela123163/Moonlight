@@ -198,10 +198,12 @@ bool Scene::LoadLight(const nlohmann::json& sceneConfig, const GraphicContext& c
             );
         
         auto views = GenerateCubeViewMatrices(XMLoadFloat3(&pointLight.Position));
-        
-        pointLight.Project = GenerateCubeProjectMatrix(M_PI_2, 1.0F, pointLight.Near, pointLight.Range);
-                
+
+        pointLight.Project = XMMatrixPerspectiveFovLH(M_PI_2, 1.0F, pointLight.Near, pointLight.Range);
         BoundingFrustum::CreateFromMatrix(pointLight.Frustum, pointLight.Project);
+#ifdef REVERSE_Z
+        pointLight.Project = XMMatrixPerspectiveFovLH(M_PI_2, 1.0F, pointLight.Range, pointLight.Near);
+#endif 
 
         pointLight.BoundingSphere.Center = pointLight.Position;
         pointLight.BoundingSphere.Radius = pointLight.Range;
@@ -266,12 +268,16 @@ bool Scene::LoadLight(const nlohmann::json& sceneConfig, const GraphicContext& c
             );
         spotLight.InvView = XMMatrixInverse(get_rvalue_ptr(XMMatrixDeterminant(spotLight.View)), spotLight.View);
         
-        spotLight.Project = GenerateCubeProjectMatrix( M_PI_2, 1.0f, spotLight.Near, spotLight.Range);
+        spotLight.Project = XMMatrixPerspectiveFovLH( M_PI_2, 1.0f, spotLight.Near, spotLight.Range);
+        BoundingFrustum::CreateFromMatrix(spotLight.Frustum, spotLight.Project);
+#ifdef REVERSE_Z
+        spotLight.Project = XMMatrixPerspectiveFovLH(M_PI_2, 1.0f, spotLight.Range, spotLight.Near);
+#endif 
 
         spotLight.ViewProject = XMMatrixMultiply(spotLight.View, spotLight.Project);
         spotLight.InvViewProject = XMMatrixInverse(get_rvalue_ptr(XMMatrixDeterminant(spotLight.ViewProject)), spotLight.ViewProject);
         
-        BoundingFrustum::CreateFromMatrix(spotLight.Frustum, spotLight.Project);
+        
 
         mSpotLights[i] = move(spotLight);
     }

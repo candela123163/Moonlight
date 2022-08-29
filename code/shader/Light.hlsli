@@ -2,17 +2,9 @@
 #define _LIGHT_INCLUDED
 
 #include "LitInput.hlsli"
-#include "Surface.hlsli"
+#include "LitDefine.hlsli"
 #include "Util.hlsli"
-
-struct Light
-{
-    float3 color;
-    float intensity;
-    float3 direction;
-    float attenuation;
-};
-
+#include "Shadow.hlsli"
 
 Light GetSun()
 {
@@ -30,7 +22,7 @@ int GetPointLightCount()
     return _PointLightCount;
 }
 
-Light GetPointLight(int index, Surface surface)
+Light GetPointLight(uint index, Surface surface)
 {
     Light light;
     PointLight pointLight = _PointLights[index];
@@ -56,7 +48,7 @@ int GetSpotLightCount()
     return _SpotLightCount;
 }
 
-Light GetSpotLight(int index, Surface surface)
+Light GetSpotLight(uint index, Surface surface)
 {
     Light light;
     SpotLight spotLight = _SpotLights[index];
@@ -77,7 +69,7 @@ Light GetSpotLight(int index, Surface surface)
             saturate(dot(-normalize(spotLight.Direction), light.direction) * spotLight.AttenuationFactorA
             + spotLight.AttenuationFactorB)
         );
-    light.attenuation = rangeAttenuation * spotAttenuation;
+    light.attenuation = rangeAttenuation * spotAttenuation * GetSpotShadowAttenuation(surface, index);
     
     return light;
 }

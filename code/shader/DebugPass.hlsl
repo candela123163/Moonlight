@@ -35,6 +35,9 @@ VertexOut vs(uint vid : SV_VertexID)
     VertexOut vout;
     vout.TexC = gTexCoords[vid];
     vout.PosH = float4(2.0f * vout.TexC.x - 1.0f, 1.0f - 2.0f * vout.TexC.y, 0.0f, 1.0f);
+#ifdef REVERSE_Z
+    vout.PosH.z = 1.0f;
+#endif
     return vout;
 }
 

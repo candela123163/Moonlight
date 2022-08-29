@@ -79,8 +79,56 @@ float3 GetEnvPrefilteredColor(float3 dir, float roughness)
 
 float GetSpotShadowMapValue(uint index, float2 uv, float compareDepth)
 {
+    uint mapIndex = _ShadowSpot[index].shadowMapIndex;
+#ifdef REVERSE_Z
+    return _2DMaps[mapIndex].SampleCmpLevelZero(_SamplerShadowGreater, uv, compareDepth).r;
+#else
+    return _2DMaps[mapIndex].SampleCmpLevelZero(_SamplerShadowLess, uv, compareDepth).r;
+#endif
+}
+
+float GetSunShadowMapValue(uint cascade, float2 uv, float compareDepth)
+{
+    uint mapIndex = _ShadowCascade[cascade].shadowMapIndex;
+#ifdef REVERSE_Z
+    return _2DMaps[mapIndex].SampleCmpLevelZero(_SamplerShadowGreater, uv, compareDepth).r;
+#else
+    return _2DMaps[mapIndex].SampleCmpLevelZero(_SamplerShadowLess, uv, compareDepth).r;
+#endif
+}
+
+float GetPointShadowMapValue(uint index, float3 dir, float compareDepth)
+{
     uint mapIndex = _ShadowPoint[index].shadowMapIndex;
-    return _2DMaps[mapIndex].SampleCmpLevelZero(_SamplerShadow, uv, compareDepth).r;
+#ifdef REVERSE_Z
+    return _CubeMaps[mapIndex].SampleCmpLevelZero(_SamplerShadowGreater, dir, compareDepth).r;
+#else
+    return _CubeMaps[mapIndex].SampleCmpLevelZero(_SamplerShadowLess, dir, compareDepth).r;
+#endif
+}
+
+float4 GetSpotShadowMapSize(uint index)
+{
+    uint mapIndex = _ShadowSpot[index].shadowMapIndex;
+    float w, h;
+    _2DMaps[mapIndex].GetDimensions(w, h);
+    return float4(1.0f / w, 1.0f / h, w, h);
+}
+
+float4 GetPointShadowMapSize(uint index)
+{
+    uint mapIndex = _ShadowPoint[index].shadowMapIndex;
+    float w, h;
+    _CubeMaps[mapIndex].GetDimensions(w, h);
+    return float4(1.0f / w, 1.0f / h, w, h);
+}
+
+float4 GetSunCascadeShadowMapSize(uint cascade)
+{
+    uint mapIndex = _ShadowCascade[cascade].shadowMapIndex;
+    float w, h;
+    _2DMaps[mapIndex].GetDimensions(w, h);
+    return float4(1.0f / w, 1.0f / h, w, h);
 }
 // ---------------------------------------------------------------
 #endif

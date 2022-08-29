@@ -1,12 +1,7 @@
 #ifndef _GI_INCLUDE
 #define _GI_INCLUDE
 #include "LitInput.hlsli"
-
-struct EnvLight
-{
-    float3 irradiance;
-    float3 prefilteredColor;
-};
+#include "LitDefine.hlsli"
 
 EnvLight GetEnvLight(float3 v, float3 n, float roughness)
 {

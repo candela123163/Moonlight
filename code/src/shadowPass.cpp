@@ -6,6 +6,13 @@
 #include "light.h"
 using namespace DirectX;
 
+const XMMATRIX ShadowPass::mTexCoordTransform = XMMATRIX(
+    0.5f, 0.0f, 0.0f, 0.0f,
+    0.0f, -0.5f, 0.0f, 0.0f,
+    0.0f, 0.0f, 1.0f, 0.0f,
+    0.5f, 0.5f, 0.0f, 1.0f
+);
+
 void ShadowPass::PreparePass(const GraphicContext& context)
 {
     CD3DX12_DESCRIPTOR_RANGE tex2dTable;
@@ -103,6 +110,8 @@ void ShadowPass::PreparePass(const GraphicContext& context)
     };
 
     ThrowIfFailed(context.device->CreateGraphicsPipelineState(&pointShadowPsoDesc, IID_PPV_ARGS(mPointShadowPSO.GetAddressOf())));
+
+
 }
 
 void ShadowPass::PreprocessPass(const GraphicContext& context)
@@ -183,11 +192,12 @@ void ShadowPass::DrawSpotLightShadow(const GraphicContext& context)
         spotLight->ShadowMap->TransitionTo(context.commandList, RenderTextureState::Read);
 
         XMFLOAT4X4 viewProject;
-        XMStoreFloat4x4(&viewProject, spotLight->ViewProject);
+        XMStoreFloat4x4(&viewProject, XMMatrixTranspose(XMMatrixMultiply(spotLight->ViewProject, mTexCoordTransform)));
         mShadowConstant.ShadowSpot[i] = {
             viewProject,
             static_cast<int>(spotLight->ShadowMap->GetSrvDescriptorData().HeapIndex),
-            CalcPerspectiveNormalBias(spotLight->NormalBias, spotLight->OutterAngle, spotLight->ShadowMap->GetWidth())
+            CalcPerspectiveNormalBias(spotLight->NormalBias, spotLight->OutterAngle, spotLight->ShadowMap->GetWidth()),
+            XMFLOAT2(0, 0)
         };
     }
 }

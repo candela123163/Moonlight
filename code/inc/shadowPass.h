@@ -41,4 +41,6 @@ private:
     ComPtr< ID3D12PipelineState> mPointShadowPSO = nullptr;
 
     ShadowConst mShadowConstant;
+    
+    static const DirectX::XMMATRIX mTexCoordTransform;
 };

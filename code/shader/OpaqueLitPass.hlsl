@@ -36,7 +36,9 @@ VertexOut vs(VertexIn vin)
 }
 
 float4 ps(VertexOut pin) : SV_TARGET
-{    
+{   
+    
+    
     pin.normalW = normalize(pin.normalW);
     pin.tangentW = normalize(pin.tangentW);
     pin.biTangentW = normalize(pin.biTangentW);
@@ -65,8 +67,24 @@ float4 ps(VertexOut pin) : SV_TARGET
     surface.metallic = GetMetallic(pin.uv);
     surface.roughness = GetRoughness(pin.uv);
     surface.viewDir = normalize(_EyePosW.xyz - pin.posW);
+    surface.shadowFade = GetShadowGlobalFade(surface.depth);
     
     float3 radiance = 0.0f;
+    
+    //float4 posLS = mul(float4(surface.position, 1.0f), _ShadowSpot[0].shadowTransform);
+    //posLS /= posLS.w;
+    //posLS.y = -posLS.y;
+    //posLS.xy = posLS.xy * 0.5 + 0.5;
+    
+    //if (posLS.x >= 0.0f && posLS.x <= 1.0f && posLS.y >= 0.0f && posLS.y <= 1.0f)
+    //{
+    //    return float4(posLS.xy, 0.0f, 1.0f);
+    //}
+    //else
+    //{
+    //    return 0.0f;
+    //}
+    
     
     // direct Light
     radiance += Shading(surface, GetSun());

@@ -121,10 +121,6 @@ float RadiansToDegree(float radians)
     return radians * 180.0 * M_1_PI;
 }
 
-FXMMATRIX GenerateCubeProjectMatrix(float fovY, float aspect, float zNear, float zFar)
-{
-    return XMMatrixPerspectiveFovLH(fovY, aspect, zNear, zFar);
-}
 
 array<FXMMATRIX, 6> GenerateCubeViewMatrices(FXMVECTOR pos)
 {

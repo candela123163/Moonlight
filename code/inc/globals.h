@@ -32,7 +32,7 @@ namespace Globals
     #define MAX_POINT_LIGHT_COUNT 4
     #define MAX_SPOT_LIGHT_COUNT 4
     #define POINT_LIGHT_SHADOWMAP_RESOLUTION 512
-    #define SPOT_LIGHT_SHADOWMAP_RESOLUTION 1024
+    #define SPOT_LIGHT_SHADOWMAP_RESOLUTION 512
     #define DIRECTION_LIGHT_SHADOWMAP_RESOLUTION 1024
     #define MAX_CASCADE_COUNT 4
     
@@ -40,7 +40,7 @@ namespace Globals
     #define DUMMY_TEXTURE "white.png"
 
     // static samplers
-    extern const std::array<const CD3DX12_STATIC_SAMPLER_DESC, 7> StaticSamplers;
+    extern const std::array<const CD3DX12_STATIC_SAMPLER_DESC, 8> StaticSamplers;
 
     // path related
     extern std::filesystem::path ShaderPath;

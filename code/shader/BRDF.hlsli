@@ -2,7 +2,7 @@
 #define _BRDF_INCLUDE
 
 #include "Util.hlsli"
-#include "Surface.hlsli"
+#include "LitDefine.hlsli"
 #include "LitInput.hlsli"
 
 // Shading Model: Cook¨C TorranceBRDF
@@ -93,11 +93,6 @@ float SchlickGGX_G2(float3 wi, float3 wo, float3 n, float roughness)
 }
 // ----------------------------------------------------------
 
-struct BRDF
-{
-    float3 specular;
-    float3 diffuse;
-};
 
 // --------------------- Direct BRDF ------------------------
 float3 CookTorranceSpecular(Surface surface, float3 lightDir, out float3 Ks)

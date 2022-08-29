@@ -12,6 +12,26 @@ struct Surface
     float alpha;
     float metallic;
     float roughness;
+    float shadowFade;
 };
 
+struct Light
+{
+    float3 color;
+    float intensity;
+    float3 direction;
+    float attenuation;
+};
+
+struct EnvLight
+{
+    float3 irradiance;
+    float3 prefilteredColor;
+};
+
+struct BRDF
+{
+    float3 specular;
+    float3 diffuse;
+};
 #endif
