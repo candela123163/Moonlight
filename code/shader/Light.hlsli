@@ -38,7 +38,14 @@ Light GetPointLight(uint index, Surface surface)
             1.0f - Square(squareDistance * pointLight.InvRange * pointLight.InvRange)
         )
     ) / squareDistance;
-    light.attenuation = rangeAttenuation * GetPointShadowAttenuation(surface, index);
+    
+    light.attenuation = rangeAttenuation;
+    
+    [branch]
+    if (light.attenuation > 0.01f)
+    {
+        light.attenuation *= GetPointShadowAttenuation(surface, index);
+    }
     
     return light;
 }
@@ -69,8 +76,14 @@ Light GetSpotLight(uint index, Surface surface)
             saturate(dot(-normalize(spotLight.Direction), light.direction) * spotLight.AttenuationFactorA
             + spotLight.AttenuationFactorB)
         );
-    light.attenuation = rangeAttenuation * spotAttenuation * GetSpotShadowAttenuation(surface, index);
     
+    light.attenuation = rangeAttenuation * spotAttenuation;
+    
+    [branch]
+    if (light.attenuation > 0.01f)
+    {
+        light.attenuation *= GetSpotShadowAttenuation(surface, index);
+    }
     return light;
 }
 

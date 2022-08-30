@@ -58,16 +58,6 @@ void Scene::OnUpdate(const GraphicContext& context)
     UpdateMaterialConstant(context);
 }
 
-void Scene::InitCamera(FXMVECTOR pos,
-    FXMVECTOR target,
-    FXMVECTOR worldUp,
-    float fovY, float aspect, float zNear, float zFar)
-{
-    mCamera = make_unique<Camera>();
-    mCamera->LookAt(pos, target, worldUp);
-    mCamera->SetLens(fovY, aspect, zNear, zFar);
-}
-
 void Scene::OnMouseDown(WPARAM btnState, int x, int y)
 {
     
@@ -157,7 +147,7 @@ bool Scene::LoadLight(const nlohmann::json& sceneConfig, const GraphicContext& c
             context.device, context.descriptorHeap,
             DIRECTION_LIGHT_SHADOWMAP_RESOLUTION, DIRECTION_LIGHT_SHADOWMAP_RESOLUTION,
             1, 1, TextureDimension::Tex2D,
-            RenderTextureUsage::DepthBuffer, DXGI_FORMAT_D32_FLOAT
+            RenderTextureUsage::DepthBuffer, DXGI_FORMAT_D32_FLOAT, RenderTextureState::Read
             );
     }
 
@@ -194,7 +184,7 @@ bool Scene::LoadLight(const nlohmann::json& sceneConfig, const GraphicContext& c
             context.device, context.descriptorHeap,
             POINT_LIGHT_SHADOWMAP_RESOLUTION, POINT_LIGHT_SHADOWMAP_RESOLUTION,
             6, 1, TextureDimension::CubeMap,
-            RenderTextureUsage::ColorBuffer, DXGI_FORMAT_R32_FLOAT
+            RenderTextureUsage::ColorBuffer, DXGI_FORMAT_R32_FLOAT, RenderTextureState::Read
             );
         
         auto views = GenerateCubeViewMatrices(XMLoadFloat3(&pointLight.Position));
@@ -258,7 +248,7 @@ bool Scene::LoadLight(const nlohmann::json& sceneConfig, const GraphicContext& c
             context.device, context.descriptorHeap,
             SPOT_LIGHT_SHADOWMAP_RESOLUTION, SPOT_LIGHT_SHADOWMAP_RESOLUTION,
             1, 1, TextureDimension::Tex2D,
-            RenderTextureUsage::DepthBuffer, DXGI_FORMAT_D32_FLOAT
+            RenderTextureUsage::DepthBuffer, DXGI_FORMAT_D32_FLOAT, RenderTextureState::Read
             );
 
         spotLight.View = XMMatrixLookToLH(
@@ -310,10 +300,20 @@ bool Scene::LoadCamera(const nlohmann::json& sceneConfig, const GraphicContext& 
     float zNear = static_cast<float>(cameraConfig["Near"]);
     float zFar = static_cast<float>(cameraConfig["Far"]);
 
-    InitCamera(XMLoadFloat3(&pos),
-        XMLoadFloat3(&target),
-        XMLoadFloat3(&up),
-        fovY, aspect, zNear, zFar);
+    float shadowDistance = static_cast<float>(cameraConfig["ShadowDistance"]);
+    auto& cascadeConfig = cameraConfig["ShadowCascade"];
+    array<float, MAX_CASCADE_COUNT> cascade = {
+        static_cast<float>(cascadeConfig[0]),
+        static_cast<float>(cascadeConfig[1]),
+        static_cast<float>(cascadeConfig[2]),
+        static_cast<float>(cascadeConfig[3]),
+    };
+ 
+    mCamera = make_unique<Camera>();
+    mCamera->LookAt(XMLoadFloat3(&pos), XMLoadFloat3(&target), XMLoadFloat3(&up));
+    mCamera->SetLens(fovY, aspect, zNear, zFar);
+    mCamera->SetShadowMaxDistance(shadowDistance);
+    mCamera->SetShadowCascadeRatio(cascade);
 
     return true;
 }
@@ -463,6 +463,12 @@ void Scene::GenerateVisiblePointLights()
             pointLight.BoundingSphere,
             XMMatrixIdentity()
         )) {
+            pointLight.castShadow = Intersects(
+                mCamera->GetShadowCullFrustum(),
+                mCamera->GetInvView(),
+                pointLight.BoundingSphere,
+                XMMatrixIdentity()
+            );
             mVisiblePointLights.push_back(&pointLight);
         }
     }
@@ -484,7 +490,15 @@ void Scene::GenerateVisibleSpotLights()
             spotLight.View
         ))
         {
+            spotLight.castShadow = Intersects(
+                mCamera->GetShadowCullFrustum(),
+                mCamera->GetInvView(),
+                spotLight.Frustum,
+                spotLight.View
+            );
+
             mVisibleSpotLights.push_back(&spotLight);
         }
     }
 }
+

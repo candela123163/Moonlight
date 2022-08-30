@@ -105,7 +105,8 @@ struct ShadowConst
     {
         int shadowMapIndex;
         float shadowBias;
-        DirectX::XMFLOAT2 pad;
+        int castShadow;
+        float pad;
     };
 
     struct SpotShadow
@@ -114,7 +115,8 @@ struct ShadowConst
 
         int shadowMapIndex;
         float shadowBias;
-        DirectX::XMFLOAT2 pad;
+        int castShadow;
+        float pad;
     };
 
     CascadeShadow ShadowCascade[MAX_CASCADE_COUNT];

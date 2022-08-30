@@ -113,15 +113,10 @@ void ShadowPass::PreparePass(const GraphicContext& context)
 
     ThrowIfFailed(context.device->CreateGraphicsPipelineState(&pointShadowPsoDesc, IID_PPV_ARGS(mPointShadowPSO.GetAddressOf())));
 
-    size_t shadowMapKey = hash<string>()("ShadowDepthMap");
-    mShadowDepthMap = Globals::RenderTextureContainer.Insert(
-        shadowMapKey,
-        make_unique<RenderTexture>(
-            context.device, context.descriptorHeap, POINT_LIGHT_SHADOWMAP_RESOLUTION, POINT_LIGHT_SHADOWMAP_RESOLUTION,
-            6, 1, TextureDimension::Tex2D,
-            RenderTextureUsage::DepthBuffer, DXGI_FORMAT_D32_FLOAT
-            )
-    );
+    
+    mShadowDepthMap = make_unique<RenderTexture>(context.device, context.descriptorHeap, 
+        POINT_LIGHT_SHADOWMAP_RESOLUTION, POINT_LIGHT_SHADOWMAP_RESOLUTION,
+        6, 1, TextureDimension::Tex2D, RenderTextureUsage::DepthBuffer, DXGI_FORMAT_D32_FLOAT);
 }
 
 void ShadowPass::PreprocessPass(const GraphicContext& context)
@@ -163,6 +158,22 @@ void ShadowPass::DrawSpotLightShadow(const GraphicContext& context)
     for (size_t i = 0; i < spotLights.size(); i++)
     {
         const SpotLight* spotLight = spotLights[i];
+        spotLight->ShadowMap->Clear(context.commandList, 0, 0);
+
+        XMFLOAT4X4 viewProject;
+        XMStoreFloat4x4(&viewProject, XMMatrixTranspose(XMMatrixMultiply(spotLight->ViewProject, mTexCoordTransform)));
+        mShadowConstant.ShadowSpot[i] = {
+            viewProject,
+            static_cast<int>(spotLight->ShadowMap->GetSrvDescriptorData().HeapIndex),
+            CalcPerspectiveNormalBias(spotLight->ShadowBias, spotLight->OutterAngle, spotLight->ShadowMap->GetWidth()),
+            spotLight->castShadow,
+            0
+        };
+
+        if (!spotLight->castShadow)
+        {
+            continue;
+        }
         
         ShadowCasterConstant spotShadowConstant;
         XMStoreFloat4x4(&spotShadowConstant.LightViewProject, XMMatrixTranspose(spotLight->ViewProject));
@@ -175,7 +186,6 @@ void ShadowPass::DrawSpotLightShadow(const GraphicContext& context)
             context.frameResource->ConstantShadowCaster->GetElementGPUAddress(spotConstantOffset + i));
         
         spotLight->ShadowMap->TransitionTo(context.commandList, RenderTextureState::Write);
-        spotLight->ShadowMap->Clear(context.commandList, 0, 0);
         spotLight->ShadowMap->SetAsRenderTarget(context.commandList, 0, 0);
 
         const auto& instances = context.scene->GetVisibleRenderInstances(
@@ -201,15 +211,6 @@ void ShadowPass::DrawSpotLightShadow(const GraphicContext& context)
         }
 
         spotLight->ShadowMap->TransitionTo(context.commandList, RenderTextureState::Read);
-
-        XMFLOAT4X4 viewProject;
-        XMStoreFloat4x4(&viewProject, XMMatrixTranspose(XMMatrixMultiply(spotLight->ViewProject, mTexCoordTransform)));
-        mShadowConstant.ShadowSpot[i] = {
-            viewProject,
-            static_cast<int>(spotLight->ShadowMap->GetSrvDescriptorData().HeapIndex),
-            CalcPerspectiveNormalBias(spotLight->ShadowBias, spotLight->OutterAngle, spotLight->ShadowMap->GetWidth()),
-            XMFLOAT2(0, 0)
-        };
     }
 }
 
@@ -221,6 +222,22 @@ void ShadowPass::DrawPointLightShadow(const GraphicContext& context)
     for (size_t i = 0; i < pointLights.size(); i++)
     {
         const PointLight* pointLight = pointLights[i];
+        for (size_t face = 0; face < 6; face++)
+        {
+            pointLight->ShadowMap->Clear(context.commandList, face, 0);
+        }
+
+        mShadowConstant.ShadowPoint[i] = {
+            static_cast<int>(pointLight->ShadowMap->GetSrvDescriptorData().HeapIndex),
+            CalcPerspectiveNormalBias(pointLight->ShadowBias, M_PI_2, pointLight->ShadowMap->GetWidth()),
+            pointLight->castShadow,
+            0
+        };
+
+        if (!pointLight->castShadow) {
+            continue;
+        }
+
         pointLight->ShadowMap->TransitionTo(context.commandList, RenderTextureState::Write);
 
         for (size_t face = 0; face < 6; face++)
@@ -236,7 +253,7 @@ void ShadowPass::DrawPointLightShadow(const GraphicContext& context)
                 context.frameResource->ConstantShadowCaster->GetElementGPUAddress(pointConstantOffset + i * 6 + face));
 
             mShadowDepthMap->Clear(context.commandList, 0, 0);
-            pointLight->ShadowMap->Clear(context.commandList, face, 0);
+         
             pointLight->ShadowMap->SetAsRenderTarget(context.commandList, face, 0, *mShadowDepthMap, 0, 0);
 
             const auto& instances = context.scene->GetVisibleRenderInstances(
@@ -263,17 +280,12 @@ void ShadowPass::DrawPointLightShadow(const GraphicContext& context)
         }
 
         pointLight->ShadowMap->TransitionTo(context.commandList, RenderTextureState::Read);
-
-        mShadowConstant.ShadowPoint[i] = {
-            static_cast<int>(pointLight->ShadowMap->GetSrvDescriptorData().HeapIndex),
-            CalcPerspectiveNormalBias(pointLight->ShadowBias, M_PI_2, pointLight->ShadowMap->GetWidth()),
-            XMFLOAT2(0, 0)
-        };
     }
 }
 
 void ShadowPass::UpdateShadowConstant(const GraphicContext& context)
 {
+    mShadowConstant.ShadowMaxDistance = context.scene->GetCamera()->GetShadowMaxDistance();
     context.frameResource->ConstantShadow->CopyData(mShadowConstant);
 }
 

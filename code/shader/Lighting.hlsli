@@ -12,8 +12,16 @@ float3 IncomingLight(Surface surface, Light light)
 
 float3 Shading(Surface surface, Light light)
 {
-    BRDF brdf = DirectBRDF(surface, light.direction);
-    return IncomingLight(surface, light) * (brdf.diffuse + brdf.specular);
+    float3 energy = IncomingLight(surface, light);
+    
+    [branch]
+    if (dot(energy, 1.0f) > 0.01f)
+    {
+        BRDF brdf = DirectBRDF(surface, light.direction);
+        energy *= (brdf.diffuse + brdf.specular);
+    }
+    
+    return energy;
 }
 
 float3 EnvShading(Surface surface)

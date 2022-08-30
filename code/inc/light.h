@@ -12,6 +12,7 @@ struct DirectionalLight
     std::unique_ptr<RenderTexture> ShadowMaps[MAX_CASCADE_COUNT];
 
     float ShadowBias = 1.0f;
+    bool castShadow = true;
 };
 
 
@@ -29,6 +30,8 @@ struct PointLight
     DirectX::BoundingFrustum Frustum;
 
     DirectX::BoundingSphere BoundingSphere;
+
+    bool castShadow = true;
 
     float ShadowBias = 2.0f;
 
@@ -70,4 +73,5 @@ struct SpotLight
     DirectX::BoundingFrustum Frustum;
 
     float ShadowBias = 1.0f;
+    bool castShadow = true;
 };

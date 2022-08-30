@@ -66,6 +66,17 @@ public:
 
 	void UpdateConstant(const GraphicContext& context);
 
+	// shadow related
+	void SetShadowMaxDistance(float distance);
+	void SetShadowCascadeRatio(std::array<float, MAX_CASCADE_COUNT> cascadeRatio);
+
+	float GetShadowMaxDistance() const { return mMaxShadowDistance; }
+	std::array<float, MAX_CASCADE_COUNT> GetShadowCascadeDistance() const { return mShadowCascadeDistance; }
+	DirectX::BoundingFrustum GetShadowCullFrustum() const { return mShadowCullFrustum; }
+
+private:
+	void UpdateShadowConfig();
+
 private:
 	// Camera coordinate system with coordinates relative to world space.
 	DirectX::XMFLOAT3 mPosition = { 0.0f, 0.0f, 0.0f };
@@ -92,4 +103,10 @@ private:
 
 	// determine whether to update constant buffer
 	UINT mDirtyCount = FRAME_COUNT;
+
+	// shadow related
+	float mMaxShadowDistance = 10.0f;
+	std::array<float, MAX_CASCADE_COUNT> mShadowCascadeRatio;
+	std::array<float, MAX_CASCADE_COUNT> mShadowCascadeDistance;
+	DirectX::BoundingFrustum mShadowCullFrustum;
 };

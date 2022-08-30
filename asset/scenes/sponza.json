@@ -11,7 +11,9 @@
         "Near": 0.3,
         "Far": 50.0,
         "Position": [0.0, 1.0, 0.0],
-        "Target": [1.0, 0.0, 0.0]
+        "Target": [1.0, 0.0, 0.0],
+        "ShadowDistance": 8.0,
+        "ShadowCascade": [0.1, 0.3, 0.6, 1.0]
     },
 
     "Sun": {

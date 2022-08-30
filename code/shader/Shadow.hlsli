@@ -11,7 +11,7 @@
 
 float GetShadowGlobalFade(float depth)
 {
-    return 1.0f;
+    return saturate((_ShadowMaxDistance / depth - 1.0f) * 2.0f);
 }
 
 
@@ -19,11 +19,11 @@ float GetShadowGlobalFade(float depth)
 float GetSpotShadowAttenuation(Surface surface, uint index)
 {
     float attenuation = 1.0f;
-    if (surface.shadowFade > 0.01f)
+    SpotLight light = _SpotLights[index];
+    SpotShadow shadow = _ShadowSpot[index];
+    
+    if (shadow.castShadow && surface.shadowFade > 0.01f)
     {
-        SpotLight light = _SpotLights[index];
-        SpotShadow shadow = _ShadowSpot[index];
-        
         float3 normalBias = surface.interpolatedNormal * shadow.shadowBias *
             dot(surface.position - light.Position, normalize(light.Direction));
         
@@ -35,7 +35,9 @@ float GetSpotShadowAttenuation(Surface surface, uint index)
         float2 positions[FILTER_SAMPLER_SIZE];
         float4 size = GetSpotShadowMapSize(index);
         FILTER_SETUP(size, posLS.xy, weights, positions);
-        attenuation = 0.0f;
+        
+        attenuation = 0.0f;  
+        [unroll]
         for (uint i = 0; i < FILTER_SAMPLER_SIZE; i++)
         {
             attenuation += weights[i] * GetSpotShadowMapValue(index, positions[i], posLS.z);
@@ -49,11 +51,11 @@ float GetSpotShadowAttenuation(Surface surface, uint index)
 float GetPointShadowAttenuation(Surface surface, uint index)
 {
     float attenuation = 1.0f;
-    if(surface.shadowFade > 0.01f)
+    PointLight light = _PointLights[index];
+    PointShadow shadow = _ShadowPoint[index];
+    
+    if(shadow.castShadow && surface.shadowFade > 0.01f)
     {
-        PointLight light = _PointLights[index];
-        PointShadow shadow = _ShadowPoint[index];
-        
         float3 lightToSurface = surface.position - light.Position;
         float3 rayDir = normalize(lightToSurface);
         
@@ -61,9 +63,7 @@ float GetPointShadowAttenuation(Surface surface, uint index)
         float bias = shadow.shadowBias * dot(lightToSurface, planeNormal);
         
         float rayCompareLength = light.InvRange * (distance(surface.position, light.Position) - bias);
-        
-        //attenuation = GetPointShadowMapValue(index, rayDir, rayCompareLength);
-        
+                
         // PCF
         float weights[FILTER_SAMPLER_SIZE];
         float2 offset[FILTER_SAMPLER_SIZE];
@@ -71,6 +71,7 @@ float GetPointShadowAttenuation(Surface surface, uint index)
         FILTER_SETUP(size, 0.0f, weights, offset);
         
         attenuation = 0.0f;
+        [unroll]
         for (uint i = 0; i < FILTER_SAMPLER_SIZE; i++)
         {
             float3 dir = GetCubeShadowSamplingDirection(rayDir, offset[i]);

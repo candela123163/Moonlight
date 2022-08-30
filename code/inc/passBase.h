@@ -20,6 +20,7 @@ public:
     // -End
     //      *ReleasePass
     //      -Release Resource 
+    // ------------------------------------
 
     virtual void PreparePass(const GraphicContext& context) = 0;
     virtual void PreprocessPass(const GraphicContext& context) = 0;

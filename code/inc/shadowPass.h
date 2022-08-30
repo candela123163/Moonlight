@@ -41,9 +41,10 @@ private:
     ComPtr< ID3D12PipelineState> mShadowPSO = nullptr;
     ComPtr< ID3D12PipelineState> mPointShadowPSO = nullptr;
 
-    RenderTexture* mShadowDepthMap;
+    std::unique_ptr<RenderTexture> mShadowDepthMap;
 
     ShadowConst mShadowConstant;
     
     static const DirectX::XMMATRIX mTexCoordTransform;
+
 };

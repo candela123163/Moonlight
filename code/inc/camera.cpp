@@ -3,6 +3,7 @@
 #include "frameResource.h"
 
 using namespace DirectX;
+using namespace std;
 
 XMVECTOR Camera::GetPosition() const
 {
@@ -123,6 +124,8 @@ void Camera::SetLens(float fovY, float aspect, float zn, float zf)
 #endif
 
 	MarkConstantDirty();
+
+	UpdateShadowConfig();
 }
 
 void Camera::LookAt(FXMVECTOR pos, FXMVECTOR target, FXMVECTOR worldUp)
@@ -282,4 +285,26 @@ void Camera::UpdateConstant(const GraphicContext& context)
 	cameraConstant.NearFar = XMFLOAT4(mNearZ, mFarZ, 0.0, 0.0);
 
 	context.frameResource->ConstantCamera->CopyData(cameraConstant);
+}
+
+void Camera::SetShadowMaxDistance(float distance)
+{
+	mMaxShadowDistance = distance;
+	UpdateShadowConfig();
+}
+
+void Camera::SetShadowCascadeRatio(std::array<float, MAX_CASCADE_COUNT> cascadeRatio)
+{
+	mShadowCascadeRatio = cascadeRatio;
+	UpdateShadowConfig();
+}
+
+void Camera::UpdateShadowConfig()
+{
+	mMaxShadowDistance = min(mMaxShadowDistance, mFarZ);
+	BoundingFrustum::CreateFromMatrix(mShadowCullFrustum, XMMatrixPerspectiveFovLH(mFovY, mAspect, mNearZ, mMaxShadowDistance));
+	for (size_t i = 0; i < MAX_CASCADE_COUNT; i++)
+	{
+		mShadowCascadeDistance[i] = mMaxShadowDistance * mShadowCascadeRatio[i];
+	}
 }

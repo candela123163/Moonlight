@@ -77,11 +77,6 @@ private:
     bool LoadInstance(const nlohmann::json& sceneConfig, const GraphicContext& context);
     bool LoadInstance(const aiNode* node, const aiScene* scene, const GraphicContext& context);
     
-    void InitCamera(DirectX::FXMVECTOR pos,
-        DirectX::FXMVECTOR target, 
-        DirectX::FXMVECTOR worldUp,
-        float fovY, float aspect, float zNear, float zFar);
-
     void UpdateInstanceConstant(const GraphicContext& context);
     void UpdateMaterialConstant(const GraphicContext& context);
     void UpdateLightConstant(const GraphicContext& context);

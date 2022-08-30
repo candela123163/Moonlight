@@ -104,7 +104,8 @@ struct PointShadow
 {
     int shadowMapIndex;
     float shadowBias;
-    float2 pad;
+    int castShadow;
+    float pad;
 };
 
 struct SpotShadow
@@ -113,7 +114,8 @@ struct SpotShadow
 
     int shadowMapIndex;
     float shadowBias;
-    float2 pad;
+    int castShadow;
+    float pad;
 };
 
 #define DEFINE_SHADOW_CONSTANT(bx)                              \
