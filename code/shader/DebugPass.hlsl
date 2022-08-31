@@ -59,18 +59,25 @@ float4 ps(VertexOut pin) : SV_TARGET
     
     if(uv.x < 0.5f && uv.y < 0.5f)
     {
+        uv *= 2.0f;
         return _2DMaps[m0].Sample(_SamplerLinearClamp, uv).rrra;
     }
     else if(uv.x < 1.0f && uv.y < 0.5f)
     {
+        uv.x = uv.x * 2.0f - 1.0f;
+        uv.y *= 2.0f;
         return _2DMaps[m1].Sample(_SamplerLinearClamp, uv).rrra;
     }
     else if(uv.x < 0.5f && uv.y < 1.0f)
     {
+        uv.x *= 2.0f;
+        uv.y = uv.y * 2.0f - 1.0f;
         return _2DMaps[m2].Sample(_SamplerLinearClamp, uv).rrra;
     }
     else
     {
+        uv.x = uv.x * 2.0f - 1.0f;
+        uv.y = uv.y * 2.0f - 1.0f;
         return _2DMaps[m3].Sample(_SamplerLinearClamp, uv).rrra;
     }
     
