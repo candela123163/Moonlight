@@ -37,7 +37,7 @@ Mesh::Mesh(const GraphicContext& context, const std::vector<Vertex>& vertexs, co
     
     mIndexCount = indices.size();
 
-    mBoundingBox = bbx;
+    BoundingOrientedBox::CreateFromBoundingBox(mOBBX, bbx);
 }
 
 Mesh* Mesh::GetOrLoad(int meshIndex, const aiScene* scene, int globalMeshIndex, const GraphicContext& context)

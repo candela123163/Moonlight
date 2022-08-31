@@ -114,16 +114,19 @@ void DebugPass::DrawPass(const GraphicContext& context)
     float resolution[2] = { mScreenViewport.Width, mScreenViewport.Height };
     context.commandList->SetGraphicsRoot32BitConstants((int)RootSignatureParam::Constant32Float, 2, &resolution, 0);
 
+    const auto& sun = context.scene->GetDirectionalLight();
+    int cascadeCount = context.scene->GetCamera()->GetCascadeCount();
+
     UINT mapIndices[10];
-    auto spotLights = context.scene->GetVisibleSpotLights();
-    size_t i = 0;
-    for (; i < 10 && i < spotLights.size(); i++)
-    {
-        mapIndices[i] = spotLights[i]->ShadowMap->GetSrvDescriptorData().HeapIndex;
-    }
-    for (; i < 10; i++)
+    
+    
+    for (size_t i = 0; i < 10; i++)
     {
         mapIndices[i] = 0;
+        if (i < cascadeCount) {
+            mapIndices[i] = sun.ShadowMaps[i]->GetSrvDescriptorData().HeapIndex;
+        }
+        
     }
     context.commandList->SetGraphicsRoot32BitConstants((int)RootSignatureParam::Constant32UInt, 10, &mapIndices, 0);
 

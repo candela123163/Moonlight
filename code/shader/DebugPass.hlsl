@@ -5,7 +5,16 @@ DEFINE_RENDER_TARGET_SIZE_CONSTANT(b0)
 
 cbuffer MapIndicesConstant : register(b1)
 {
-    uint mapIndices[10];
+    uint m0;
+    uint m1;
+    uint m2;
+    uint m3;
+    uint m4;
+    uint m5;
+    uint m6;
+    uint m7;
+    uint m8;
+    uint m9;
 }
 
 #define TEXTURE_ARRAY_SIZE 128
@@ -41,8 +50,33 @@ VertexOut vs(uint vid : SV_VertexID)
     return vout;
 }
 
+
 float4 ps(VertexOut pin) : SV_TARGET
 {
-    return float4(_2DMaps[mapIndices[0]].Sample(_SamplerLinearClamp, pin.TexC).rrr, 1.0f);
+    
+    
+    float2 uv = pin.TexC;
+    
+    if(uv.x < 0.5f && uv.y < 0.5f)
+    {
+        return _2DMaps[m0].Sample(_SamplerLinearClamp, uv).rrra;
+    }
+    else if(uv.x < 1.0f && uv.y < 0.5f)
+    {
+        return _2DMaps[m1].Sample(_SamplerLinearClamp, uv).rrra;
+    }
+    else if(uv.x < 0.5f && uv.y < 1.0f)
+    {
+        return _2DMaps[m2].Sample(_SamplerLinearClamp, uv).rrra;
+    }
+    else
+    {
+        return _2DMaps[m3].Sample(_SamplerLinearClamp, uv).rrra;
+    }
+    
+  
+    
+    
+    
     
 }

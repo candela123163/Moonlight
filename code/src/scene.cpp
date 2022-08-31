@@ -11,7 +11,8 @@ Instance::Instance(UINT id, DirectX::XMFLOAT4X4 ts, Material* material, Mesh* me
     mInstanceID(id), mMaterial(material), mMesh(mesh)
 {
     mTransform = XMLoadFloat4x4(&ts);
-    mInvTransform = XMMatrixInverse(get_rvalue_ptr(XMMatrixDeterminant(mTransform)), mTransform);
+    XMVECTOR determinant;
+    mInvTransform = XMMatrixInverse(&determinant, mTransform);
 }
 
 void Instance::UpdateConstant(const GraphicContext& context)
@@ -36,10 +37,10 @@ bool Scene::Load(const filesystem::path& filePath, const GraphicContext& context
 
     json sceneConfig = json::parse(file);
 
-    return LoadSkyBox(sceneConfig, context) &&
-        LoadLight(sceneConfig, context) &&
-        LoadCamera(sceneConfig, context) &&
-        LoadInstance(sceneConfig, context);
+    return  LoadCamera(sceneConfig, context) &&
+            LoadLight(sceneConfig, context) &&
+            LoadSkyBox(sceneConfig, context) &&
+            LoadInstance(sceneConfig, context);
 }
 
 void Scene::OnLoadOver(const GraphicContext& context) 
@@ -141,7 +142,8 @@ bool Scene::LoadLight(const nlohmann::json& sceneConfig, const GraphicContext& c
         static_cast<float>(directionConfig[2])
     );
 
-    for (size_t i = 0; i < MAX_CASCADE_COUNT; i++)
+    int cascadeCount = min(MAX_CASCADE_COUNT, mCamera->GetCascadeCount());
+    for (size_t i = 0; i < cascadeCount; i++)
     {
         mDirectionalLight.ShadowMaps[i] = make_unique<RenderTexture>(
             context.device, context.descriptorHeap,
@@ -256,7 +258,8 @@ bool Scene::LoadLight(const nlohmann::json& sceneConfig, const GraphicContext& c
                 XMLoadFloat3(&spotLight.Direction),
                 XMLoadFloat3(get_rvalue_ptr(XMFLOAT3(0.0f, 1.0f, 0.0f)))
             );
-        spotLight.InvView = XMMatrixInverse(get_rvalue_ptr(XMMatrixDeterminant(spotLight.View)), spotLight.View);
+        XMVECTOR determinant;
+        spotLight.InvView = XMMatrixInverse(&determinant, spotLight.View);
         
         spotLight.Project = XMMatrixPerspectiveFovLH( M_PI_2, 1.0f, spotLight.Near, spotLight.Range);
         BoundingFrustum::CreateFromMatrix(spotLight.Frustum, spotLight.Project);
@@ -265,10 +268,8 @@ bool Scene::LoadLight(const nlohmann::json& sceneConfig, const GraphicContext& c
 #endif 
 
         spotLight.ViewProject = XMMatrixMultiply(spotLight.View, spotLight.Project);
-        spotLight.InvViewProject = XMMatrixInverse(get_rvalue_ptr(XMMatrixDeterminant(spotLight.ViewProject)), spotLight.ViewProject);
+        spotLight.InvViewProject = XMMatrixInverse(&determinant, spotLight.ViewProject);
         
-        
-
         mSpotLights[i] = move(spotLight);
     }
 
@@ -292,8 +293,6 @@ bool Scene::LoadCamera(const nlohmann::json& sceneConfig, const GraphicContext& 
         static_cast<float>(targetConfig[1]),
         static_cast<float>(targetConfig[2])
     );
-
-    XMFLOAT3 up(0.0f, 1.0f, 0.0f);
     
     float fovY = DegreeToRadians(static_cast<float>(cameraConfig["FOVY"]));
     float aspect = static_cast<float>(context.screenWidth) / context.screenHeight;
@@ -301,20 +300,23 @@ bool Scene::LoadCamera(const nlohmann::json& sceneConfig, const GraphicContext& 
     float zFar = static_cast<float>(cameraConfig["Far"]);
 
     float shadowDistance = static_cast<float>(cameraConfig["ShadowDistance"]);
+
+    int cascadeCount = min(MAX_CASCADE_COUNT, static_cast<int>(cameraConfig["CascadeCount"]));
+
     auto& cascadeConfig = cameraConfig["ShadowCascade"];
-    array<float, MAX_CASCADE_COUNT> cascade = {
-        static_cast<float>(cascadeConfig[0]),
-        static_cast<float>(cascadeConfig[1]),
-        static_cast<float>(cascadeConfig[2]),
-        static_cast<float>(cascadeConfig[3]),
-    };
+
+    array<float, MAX_CASCADE_COUNT> cascade;
+    for (size_t i = 0; i < cascadeCount; i++)
+    {
+        cascade[i] = static_cast<float>(cascadeConfig[i]);
+    }
  
     mCamera = make_unique<Camera>();
-    mCamera->LookAt(XMLoadFloat3(&pos), XMLoadFloat3(&target), XMLoadFloat3(&up));
+    mCamera->LookAt(XMLoadFloat3(&pos), XMLoadFloat3(&target), XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f));
     mCamera->SetLens(fovY, aspect, zNear, zFar);
     mCamera->SetShadowMaxDistance(shadowDistance);
-    mCamera->SetShadowCascadeRatio(cascade);
-
+    mCamera->SetShadowCascadeRatio(cascade, cascadeCount);
+    mCamera->UpdateShadowConfig();
     return true;
 }
 
@@ -414,8 +416,9 @@ void Scene::UpdateLightConstant(const GraphicContext& context)
     context.frameResource->ConstantLight->CopyData(lightConstant);  
 }
 
+template<typename T>
 vector<Instance*> Scene::GetVisibleRenderInstances(
-    const BoundingFrustum& frustum,
+    const T& boundingVolume,
     const XMMATRIX& LtoW,
     const XMVECTOR& pos,
     const XMVECTOR& direction
@@ -425,7 +428,7 @@ vector<Instance*> Scene::GetVisibleRenderInstances(
     instances.reserve(mInstances.size());
     for (auto& instance : mInstances)
     {
-        if (Intersects(frustum, LtoW, instance->GetMesh()->GetBoundingBox(), instance->InvTransform())) {
+        if (Intersects(boundingVolume, LtoW, instance->GetMesh()->GetOBBX(), instance->InvTransform())) {
             instances.push_back(instance.get());
         }
     }
@@ -433,12 +436,12 @@ vector<Instance*> Scene::GetVisibleRenderInstances(
     XMVECTOR nDirection = XMVector3Normalize(direction);
     sort(begin(instances), end(instances), [pos, nDirection](Instance* l, Instance* r) -> bool
     {
-        XMVECTOR leftCenterLocal = XMLoadFloat3(get_rvalue_ptr(l->GetMesh()->GetBoundingBox().Center));
+        XMVECTOR leftCenterLocal = XMLoadFloat3(get_rvalue_ptr(l->GetMesh()->GetOBBX().Center));
         XMVECTOR leftCenterWorld = XMVector3Transform(leftCenterLocal, l->Transform());
         XMVECTOR leftToFrustumOrigin = XMVectorSubtract(leftCenterWorld, pos);
         XMVECTOR leftDepth = XMVector3Dot(leftToFrustumOrigin, nDirection);
 
-        XMVECTOR rightCenterLocal = XMLoadFloat3(get_rvalue_ptr(r->GetMesh()->GetBoundingBox().Center));
+        XMVECTOR rightCenterLocal = XMLoadFloat3(get_rvalue_ptr(r->GetMesh()->GetOBBX().Center));
         XMVECTOR rightCenterWorld = XMVector3Transform(rightCenterLocal, r->Transform());
         XMVECTOR rightToFrustumOrigin = XMVectorSubtract(rightCenterWorld, pos);
         XMVECTOR rightDepth = XMVector3Dot(rightToFrustumOrigin, nDirection);
@@ -448,6 +451,24 @@ vector<Instance*> Scene::GetVisibleRenderInstances(
 
     return instances;
 }
+
+// instantiation
+template
+vector<Instance*> Scene::GetVisibleRenderInstances(
+    const BoundingFrustum& boundingVolume,
+    const XMMATRIX& LtoW,
+    const XMVECTOR& pos,
+    const XMVECTOR& direction
+) const ;
+
+template
+vector<Instance*> Scene::GetVisibleRenderInstances(
+    const BoundingOrientedBox& boundingVolume,
+    const XMMATRIX& LtoW,
+    const XMVECTOR& pos,
+    const XMVECTOR& direction
+) const;
+
 
 void Scene::GenerateVisiblePointLights() 
 {

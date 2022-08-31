@@ -6,13 +6,13 @@
 #include "Util.hlsli"
 #include "Shadow.hlsli"
 
-Light GetSun()
+Light GetSun(Surface surface)
 {
     Light light;
     light.color = _SunColor;
     light.intensity = _SunIntensity;
     light.direction = -normalize(_SunDirection);
-    light.attenuation = 1.0f;
+    light.attenuation = GetSunShadowAttenuation(surface);
     
     return light;
 }
@@ -42,7 +42,7 @@ Light GetPointLight(uint index, Surface surface)
     light.attenuation = rangeAttenuation;
     
     [branch]
-    if (light.attenuation > 0.01f)
+    if (light.attenuation.r > 0.01f)
     {
         light.attenuation *= GetPointShadowAttenuation(surface, index);
     }
@@ -80,7 +80,7 @@ Light GetSpotLight(uint index, Surface surface)
     light.attenuation = rangeAttenuation * spotAttenuation;
     
     [branch]
-    if (light.attenuation > 0.01f)
+    if (light.attenuation.r > 0.01f)
     {
         light.attenuation *= GetSpotShadowAttenuation(surface, index);
     }

@@ -76,7 +76,7 @@ cbuffer LightConstant : register(bx)                        \
     int _SpotLightCount;                                    \
                                                             \
     float _SunIntensity;                                    \
-    float3 LightConstant_pad;                                          \
+    float3 LightConstant_pad;                               \
                                                             \
     PointLight _PointLights[POINT_LIGHT_MAX_COUNT];         \
     SpotLight _SpotLights[SPOT_LIGHT_MAX_COUNT];            \
@@ -88,16 +88,19 @@ cbuffer ShadowCasterConstant : register(bx)                 \
     float4x4 _LightViewProject;                             \
     float3 _LightPosition;                                  \
     float _LightInvRange;                                   \
+                                                            \
+    float _NearZ;                                           \
+    float3 ShadowCasterConstant_pad;                        \
 }
 
 struct CascadeShadow
 {
     float4x4 shadowTransform;
         
-    int shadowMapIndex;
+    uint shadowMapIndex;
     float cascadeDistance;
     float shadowBias;
-    float softValue;
+    float pad;
 };
 
 struct PointShadow
@@ -126,7 +129,9 @@ cbuffer ShadowConstant : register(bx)                           \
     SpotShadow _ShadowSpot[SPOT_LIGHT_MAX_COUNT];               \
                                                                 \
     float _ShadowMaxDistance;                                   \
-    float3 ShadowConstant_pad;                                  \
+    int _CascadeCount;                                        \
+    int _SunCastShadow;                                         \
+    float ShadowConstant_pad;                                   \
 }
 
 #define DEFINE_RENDER_TARGET_SIZE_CONSTANT(bx)                  \

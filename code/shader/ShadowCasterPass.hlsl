@@ -51,6 +51,16 @@ v2f_point_shadow vs_point_shadow(VertexIn vin)
     vout.posW = posW.xyz;
     vout.uv = vin.uv;
     
+#ifdef SHADOW_PANCAKING
+
+#ifdef REVERSE_Z
+    vout.posH.z = min(vout.posH.z, _NearZ);
+#else
+    vout.posH.z = max(vout.posH.z, _NearZ);
+#endif // REVERSE_Z
+    
+#endif  // SHADOW_PANCAKING
+    
     return vout;
 }
 

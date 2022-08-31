@@ -25,6 +25,7 @@
 #include <cassert>
 #include <filesystem>
 #include <limits>
+#include <functional>
 
 #include <WICTextureLoader.h>
 #include <DDSTextureLoader.h>

@@ -127,21 +127,16 @@ std::array<DirectX::FXMMATRIX, 6> GenerateCubeViewMatrices(DirectX::FXMVECTOR po
 
 DirectX::XMVECTOR GetCubeFaceNormal(UINT face);
 
-// intersect test
+template<typename T1, typename T2>
 bool Intersects(
-    const DirectX::BoundingFrustum& frustum,
+    const T1& boungdingVolume1,
     const DirectX::XMMATRIX& LtoW,
-    const DirectX::BoundingBox& bbx,
-    const DirectX::XMMATRIX& WtoL);
-
-bool Intersects(
-    const DirectX::BoundingFrustum& frustum,
-    const DirectX::XMMATRIX& LtoW,
-    const DirectX::BoundingSphere& bsphere,
-    const DirectX::XMMATRIX& WtoL);
-
-bool Intersects(
-    const DirectX::BoundingFrustum& frustum,
-    const DirectX::XMMATRIX& LtoW,
-    const DirectX::BoundingFrustum& frustum2,
-    const DirectX::XMMATRIX& WtoL);
+    const T2& boungdingVolume2,
+    const DirectX::XMMATRIX& WtoL
+)
+{
+    DirectX::XMMATRIX L1toL2 = XMMatrixMultiply(LtoW, WtoL);
+    T1 localVolume;
+    boungdingVolume1.Transform(localVolume, L1toL2);
+    return localVolume.Intersects(boungdingVolume2);
+}

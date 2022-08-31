@@ -7,6 +7,7 @@
 using Microsoft::WRL::ComPtr;
 
 class RenderTexture;
+class Instance;
 
 class ShadowPass final : public PassBase
 {
@@ -23,7 +24,9 @@ private:
 
     void UpdateShadowConstant(const GraphicContext& context);
 
-    float CalcPerspectiveNormalBias(float baseBias,float fovY, float resolution);
+    float CalcPerspectiveShadowBias(float baseBias,float fovY, float resolution);
+
+    void DrawInstanceShadow(const GraphicContext& context, const std::vector<Instance*>& instances);
 
     enum class RootSignatureParam
     {
@@ -46,5 +49,5 @@ private:
     ShadowConst mShadowConstant;
     
     static const DirectX::XMMATRIX mTexCoordTransform;
-
+    const float mSunNearPushBack = 100.0f;
 };

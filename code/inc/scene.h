@@ -60,8 +60,9 @@ public:
     std::vector<const PointLight*> GetVisiblePointLights() const { return mVisiblePointLights; }
     std::vector<const SpotLight*> GetVisibleSpotLights() const { return mVisibleSpotLights; }
 
+    template<typename T>
     std::vector<Instance*> GetVisibleRenderInstances(
-        const DirectX::BoundingFrustum& frustum,
+        const T& boundingVolume,
         const DirectX::XMMATRIX& LtoW,
         const DirectX::XMVECTOR& pos,
         const DirectX::XMVECTOR& direction

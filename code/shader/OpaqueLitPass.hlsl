@@ -37,8 +37,6 @@ VertexOut vs(VertexIn vin)
 
 float4 ps(VertexOut pin) : SV_TARGET
 {   
-    
-    
     pin.normalW = normalize(pin.normalW);
     pin.tangentW = normalize(pin.tangentW);
     pin.biTangentW = normalize(pin.biTangentW);
@@ -61,18 +59,29 @@ float4 ps(VertexOut pin) : SV_TARGET
     surface.position = pin.posW;
     surface.albedo = baseColor.rgb;
     surface.alpha = baseColor.a;
-    surface.depth = pin.posH.w;
+    surface.depth = mul(float4(surface.position, 1.0f), _View).z;
     surface.normal = normalW;
     surface.interpolatedNormal = pin.normalW;
     surface.metallic = GetMetallic(pin.uv);
     surface.roughness = GetRoughness(pin.uv);
     surface.viewDir = normalize(_EyePosW.xyz - pin.posW);
     surface.shadowFade = GetShadowGlobalFade(surface.depth);
-    
+        
     float3 radiance = 0.0f;
-  
+    
+    uint cascadeIndex = 0;
+    float blend = 1.0;
+    
+    
+    
+
+    //float3 attenuation = GetSunShadowCascade(surface);
+    //return float4(attenuation, 1.0f);
+    
+
+    
     // direct Light
-    radiance += Shading(surface, GetSun());
+    radiance += Shading(surface, GetSun(surface));
     
     for (int i = 0; i < GetPointLightCount(); i++)
     {

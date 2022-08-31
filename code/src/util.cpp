@@ -157,38 +157,3 @@ XMVECTOR GetCubeFaceNormal(UINT face)
     return looks[face];
 }
 
-bool Intersects(
-    const DirectX::BoundingFrustum& frustum,
-    const DirectX::XMMATRIX& LtoW,
-    const DirectX::BoundingBox& bbx,
-    const DirectX::XMMATRIX& WtoL)
-{
-    XMMATRIX L1toL2 = XMMatrixMultiply(LtoW, WtoL);
-    BoundingFrustum localFrustum;
-    frustum.Transform(localFrustum, L1toL2);
-    return localFrustum.Intersects(bbx);
-}
-
-bool Intersects(
-    const DirectX::BoundingFrustum& frustum,
-    const DirectX::XMMATRIX& LtoW,
-    const DirectX::BoundingSphere& bsphere,
-    const DirectX::XMMATRIX& WtoL)
-{
-    XMMATRIX L1toL2 = XMMatrixMultiply(LtoW, WtoL);
-    BoundingFrustum localFrustum;
-    frustum.Transform(localFrustum, L1toL2);
-    return localFrustum.Intersects(bsphere);
-}
-
-bool Intersects(
-    const DirectX::BoundingFrustum& frustum,
-    const DirectX::XMMATRIX& LtoW,
-    const DirectX::BoundingFrustum& frustum2,
-    const DirectX::XMMATRIX& WtoL)
-{
-    XMMATRIX L1toL2 = XMMatrixMultiply(LtoW, WtoL);
-    BoundingFrustum localFrustum;
-    frustum.Transform(localFrustum, L1toL2);
-    return localFrustum.Intersects(frustum2);
-}

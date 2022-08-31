@@ -12,14 +12,15 @@
         "Far": 50.0,
         "Position": [0.0, 1.0, 0.0],
         "Target": [1.0, 0.0, 0.0],
-        "ShadowDistance": 8.0,
-        "ShadowCascade": [0.1, 0.3, 0.6, 1.0]
+        "ShadowDistance": 30.0,
+        "ShadowCascade": [0.3, 1.0],
+        "CascadeCount": 2
     },
 
     "Sun": {
-        "Direction": [-1.0, -1.0, -1.0],
+        "Direction": [-1.0, -10.0, -1.0],
         "Color": [ 0.513, 0.494, 0.462 ],
-        "Intensity":  3.0
+        "Intensity":  10.0
     },
 
     "PointLights":[

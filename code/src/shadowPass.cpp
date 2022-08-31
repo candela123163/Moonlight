@@ -15,6 +15,19 @@ const XMMATRIX ShadowPass::mTexCoordTransform = XMMATRIX(
     0.5f, 0.5f, 0.0f, 1.0f
 );
 
+struct ShadowPassData : public PassData
+{
+    XMVECTOR lastSunPosition[MAX_CASCADE_COUNT];
+
+    ShadowPassData()
+    {
+        for (size_t i = 0; i < MAX_CASCADE_COUNT; i++)
+        {
+            lastSunPosition[i] = XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f);
+        }
+    }
+};
+
 void ShadowPass::PreparePass(const GraphicContext& context)
 {
     CD3DX12_DESCRIPTOR_RANGE tex2dTable;
@@ -44,7 +57,21 @@ void ShadowPass::PreparePass(const GraphicContext& context)
     ThrowIfFailed(context.device->CreateRootSignature(0, serializedRootSig->GetBufferPointer(), serializedRootSig->GetBufferSize(), IID_PPV_ARGS(mSignature.GetAddressOf())));
 
     // create pso
-    const D3D_SHADER_MACRO macros[] =
+    const D3D_SHADER_MACRO macros1[] =
+    {
+#ifdef REVERSE_Z
+        "REVERSE_Z", "1",
+#endif
+        //"SHADOW_PANCAKING", "1",
+        NULL, NULL
+    };
+
+    ComPtr<ID3DBlob> vs1 = CompileShader(Globals::ShaderPath / "ShadowCasterPass.hlsl",
+        macros1, "vs_shadow", "vs_5_1");
+    ComPtr<ID3DBlob> ps1 = CompileShader(Globals::ShaderPath / "ShadowCasterPass.hlsl",
+        macros1, "ps_shadow", "ps_5_1");
+
+    const D3D_SHADER_MACRO macros2[] =
     {
 #ifdef REVERSE_Z
         "REVERSE_Z", "1",
@@ -52,15 +79,10 @@ void ShadowPass::PreparePass(const GraphicContext& context)
         NULL, NULL
     };
 
-    ComPtr<ID3DBlob> vs1 = CompileShader(Globals::ShaderPath / "ShadowCasterPass.hlsl",
-        macros, "vs_shadow", "vs_5_1");
-    ComPtr<ID3DBlob> ps1 = CompileShader(Globals::ShaderPath / "ShadowCasterPass.hlsl",
-        macros, "ps_shadow", "ps_5_1");
-
     ComPtr<ID3DBlob> vs2 = CompileShader(Globals::ShaderPath / "ShadowCasterPass.hlsl",
-        macros, "vs_point_shadow", "vs_5_1");
+        macros2, "vs_point_shadow", "vs_5_1");
     ComPtr<ID3DBlob> ps2 = CompileShader(Globals::ShaderPath / "ShadowCasterPass.hlsl",
-        macros, "ps_point_shadow", "ps_5_1");
+        macros2, "ps_point_shadow", "ps_5_1");
 
     // directional & spot shadow
     D3D12_GRAPHICS_PIPELINE_STATE_DESC shadowPsoDesc;
@@ -145,8 +167,137 @@ void ShadowPass::ReleasePass(const GraphicContext& context)
 
 }
 
+// ======================== draw shadows ==================================
+
 void ShadowPass::DrawSunShadow(const GraphicContext& context)
 {
+    UINT sunConstantOffset = 0;
+
+    const DirectionalLight& sun = context.scene->GetDirectionalLight();
+    const Camera* camera = context.scene->GetCamera();
+    int cascadeCount = camera->GetCascadeCount();
+    array<float, MAX_CASCADE_COUNT> cascadeDistance = camera->GetShadowCascadeDistance();
+
+    // clear shadow map & set part shadow constant
+    for (size_t i = 0; i < cascadeCount; i++)
+    {
+        sun.ShadowMaps[i]->Clear(context.commandList, 0, 0);
+        mShadowConstant.ShadowCascade[i].shadowMapIndex = sun.ShadowMaps[i]->GetSrvDescriptorData().HeapIndex;
+        mShadowConstant.ShadowCascade[i].cascadeDistance = cascadeDistance[i];
+    }
+    mShadowConstant.sunCastShadow = sun.castShadow;
+
+    if (!sun.castShadow) {
+        return;
+    }
+
+    ShadowPassData* passData = dynamic_cast<ShadowPassData*>(context.frameResource->GetOrCreate(this, 
+        []() {
+            return make_unique<ShadowPassData>();
+        }
+    ));
+
+
+    const XMMATRIX sunWorldToLocal = XMMatrixLookToLH(
+        XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f), 
+        XMLoadFloat3(&sun.Direction),
+        XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f));
+
+    XMVECTOR determinant;
+    const XMMATRIX sunLocalToWorld = XMMatrixInverse(
+        &determinant,
+        sunWorldToLocal);
+
+    array<XMVECTOR, 4> nearCorners, farCorners;
+    nearCorners = camera->GetFrustumPlaneConers(camera->GetNearZ());
+    for (size_t i = 0; i < cascadeCount; i++)
+    {
+        float distance = cascadeDistance[i];
+        farCorners = camera->GetFrustumPlaneConers(distance);
+        float farPlaneDiagonal = XMVectorGetX(XMVector3Length(farCorners[0] - farCorners[2]));
+        float volumeDiagonal = XMVectorGetX(XMVector3Length(nearCorners[0] - farCorners[2]));
+        float viewVolumeSize = max(farPlaneDiagonal, volumeDiagonal);
+        float pixelSize = viewVolumeSize / sun.ShadowMaps[i]->GetWidth();
+
+        // calculate cascade matrices
+        XMVECTOR minPoint, maxPoint;
+        minPoint = maxPoint = XMVector4Transform(nearCorners[0], sunWorldToLocal);
+        for (size_t j = 0; j < 4; j++)
+        {
+            XMVECTOR pNear = XMVector4Transform(nearCorners[j], sunWorldToLocal);
+            XMVECTOR pFar = XMVector4Transform(farCorners[j], sunWorldToLocal);
+            minPoint = XMVectorMin(pNear, minPoint);
+            minPoint = XMVectorMin(pFar, minPoint);
+            maxPoint = XMVectorMax(pNear, maxPoint);
+            maxPoint = XMVectorMax(pFar, maxPoint);
+        }
+
+        swap(nearCorners, farCorners);
+
+        XMVECTOR sunLocalPos = 0.5f * (minPoint + maxPoint);
+        sunLocalPos = XMVectorSetZ(sunLocalPos, XMVectorGetZ(minPoint) - mSunNearPushBack);
+        XMVECTOR movement = sunLocalPos - passData->lastSunPosition[i];
+        movement = XMVectorFloor(movement / pixelSize) * pixelSize;
+        sunLocalPos = passData->lastSunPosition[i] + movement;
+        passData->lastSunPosition[i] = sunLocalPos;
+
+        XMVECTOR sunWorldPos = XMVector3Transform(sunLocalPos, sunLocalToWorld);
+        
+        XMMATRIX sunView = XMMatrixLookToLH(
+            sunWorldPos,
+            XMLoadFloat3(&sun.Direction),
+            XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f));
+
+        XMVECTOR determinant;
+        XMMATRIX sunInvView = XMMatrixInverse(
+            &determinant,
+            sunView);
+
+#ifdef REVERSE_Z
+        XMMATRIX sunProject = XMMatrixOrthographicLH(viewVolumeSize, viewVolumeSize, viewVolumeSize + mSunNearPushBack, 0.0f);
+#else
+        XMMATRIX sunProject = XMMatrixOrthographicLH(viewVolumeSize, viewVolumeSize, 0.0f, viewVolumeSize + mSunNearPushBack);
+#endif 
+        XMMATRIX sunVP = XMMatrixMultiply(sunView, sunProject);
+        
+        // set culling bounding oriented box
+        BoundingOrientedBox obbx;
+        obbx.Orientation = XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f);
+        obbx.Extents = XMFLOAT3(viewVolumeSize, viewVolumeSize, viewVolumeSize + mSunNearPushBack);
+        obbx.Center = XMFLOAT3(0.0f, 0.0f, 0.5f * obbx.Extents.z);
+
+        // set part cascade shadow constant
+        XMStoreFloat4x4(&mShadowConstant.ShadowCascade[i].shadowTransform,
+            XMMatrixTranspose(XMMatrixMultiply(sunVP, mTexCoordTransform)));
+        mShadowConstant.ShadowCascade[i].shadowBias = sun.ShadowBias * pixelSize * 1.4142136f;
+        
+        // set shadow caster constant
+        ShadowCasterConstant sunShadowConstant;
+        XMStoreFloat4x4(&sunShadowConstant.LightViewProject, XMMatrixTranspose(sunVP));
+        
+#ifdef REVERSE_Z
+        sunShadowConstant.NearZ = viewVolumeSize + mSunNearPushBack;
+#else
+        sunShadowConstant.NearZ = 0.0f;
+#endif // REVERSE_Z
+
+        context.frameResource->ConstantShadowCaster->CopyData(sunShadowConstant, sunConstantOffset + i);
+        context.commandList->SetGraphicsRootConstantBufferView(
+            (int)RootSignatureParam::ShadowCasterConstant,
+            context.frameResource->ConstantShadowCaster->GetElementGPUAddress(sunConstantOffset + i));
+
+        // set render target
+        sun.ShadowMaps[i]->TransitionTo(context.commandList, RenderTextureState::Write);
+        sun.ShadowMaps[i]->SetAsRenderTarget(context.commandList, 0, 0);
+
+        // draw scene to shadow map
+        auto instances = context.scene->GetVisibleRenderInstances(
+            obbx, sunInvView,
+            sunWorldPos, XMLoadFloat3(&sun.Direction));
+        DrawInstanceShadow(context, instances);
+
+        sun.ShadowMaps[i]->TransitionTo(context.commandList, RenderTextureState::Read);
+    }
 
 }
 
@@ -160,12 +311,13 @@ void ShadowPass::DrawSpotLightShadow(const GraphicContext& context)
         const SpotLight* spotLight = spotLights[i];
         spotLight->ShadowMap->Clear(context.commandList, 0, 0);
 
+        // set shadow constant
         XMFLOAT4X4 viewProject;
         XMStoreFloat4x4(&viewProject, XMMatrixTranspose(XMMatrixMultiply(spotLight->ViewProject, mTexCoordTransform)));
         mShadowConstant.ShadowSpot[i] = {
             viewProject,
             static_cast<int>(spotLight->ShadowMap->GetSrvDescriptorData().HeapIndex),
-            CalcPerspectiveNormalBias(spotLight->ShadowBias, spotLight->OutterAngle, spotLight->ShadowMap->GetWidth()),
+            CalcPerspectiveShadowBias(spotLight->ShadowBias, spotLight->OutterAngle, spotLight->ShadowMap->GetWidth()),
             spotLight->castShadow,
             0
         };
@@ -175,9 +327,9 @@ void ShadowPass::DrawSpotLightShadow(const GraphicContext& context)
             continue;
         }
         
+        // set shadow caster constant
         ShadowCasterConstant spotShadowConstant;
         XMStoreFloat4x4(&spotShadowConstant.LightViewProject, XMMatrixTranspose(spotLight->ViewProject));
-        
         spotShadowConstant.LightPosition = spotLight->Position;
         spotShadowConstant.LightInvRange = 1.0f / spotLight->Range ;
         context.frameResource->ConstantShadowCaster->CopyData(spotShadowConstant, spotConstantOffset + i);
@@ -185,6 +337,7 @@ void ShadowPass::DrawSpotLightShadow(const GraphicContext& context)
             (int)RootSignatureParam::ShadowCasterConstant,
             context.frameResource->ConstantShadowCaster->GetElementGPUAddress(spotConstantOffset + i));
         
+        // draw scene to shadow map
         spotLight->ShadowMap->TransitionTo(context.commandList, RenderTextureState::Write);
         spotLight->ShadowMap->SetAsRenderTarget(context.commandList, 0, 0);
 
@@ -193,22 +346,7 @@ void ShadowPass::DrawSpotLightShadow(const GraphicContext& context)
             XMLoadFloat3(&spotLight->Position), XMLoadFloat3(&spotLight->Direction)
         );
         
-        int currMaterialID = -1;
-        for (auto instance : instances)
-        {
-            context.commandList->SetGraphicsRootConstantBufferView(
-                (int)RootSignatureParam::ObjectConstant,
-                context.frameResource->ConstantObject->GetElementGPUAddress(instance->GetID()));
-            // set material if need
-            if (currMaterialID != instance->GetMaterial()->GetID())
-            {
-                currMaterialID = instance->GetMaterial()->GetID();
-                context.commandList->SetGraphicsRootConstantBufferView((int)RootSignatureParam::MaterialConstant,
-                    context.frameResource->ConstantMaterial->GetElementGPUAddress(currMaterialID));
-            }
-
-            instance->GetMesh()->Draw(context.commandList);
-        }
+        DrawInstanceShadow(context, instances);
 
         spotLight->ShadowMap->TransitionTo(context.commandList, RenderTextureState::Read);
     }
@@ -227,9 +365,10 @@ void ShadowPass::DrawPointLightShadow(const GraphicContext& context)
             pointLight->ShadowMap->Clear(context.commandList, face, 0);
         }
 
+        // set shadow constant
         mShadowConstant.ShadowPoint[i] = {
             static_cast<int>(pointLight->ShadowMap->GetSrvDescriptorData().HeapIndex),
-            CalcPerspectiveNormalBias(pointLight->ShadowBias, M_PI_2, pointLight->ShadowMap->GetWidth()),
+            CalcPerspectiveShadowBias(pointLight->ShadowBias, M_PI_2, pointLight->ShadowMap->GetWidth()),
             pointLight->castShadow,
             0
         };
@@ -242,16 +381,17 @@ void ShadowPass::DrawPointLightShadow(const GraphicContext& context)
 
         for (size_t face = 0; face < 6; face++)
         {
+            // set shadow caster constant
             ShadowCasterConstant pointShadowConstant;
             XMStoreFloat4x4(&pointShadowConstant.LightViewProject, XMMatrixTranspose(pointLight->GetViewProject(face)));
-
             pointShadowConstant.LightPosition = pointLight->Position;
             pointShadowConstant.LightInvRange = 1.0f / pointLight->Range;
             context.frameResource->ConstantShadowCaster->CopyData(pointShadowConstant, pointConstantOffset + i * 6 + face);
             context.commandList->SetGraphicsRootConstantBufferView(
                 (int)RootSignatureParam::ShadowCasterConstant,
                 context.frameResource->ConstantShadowCaster->GetElementGPUAddress(pointConstantOffset + i * 6 + face));
-
+            
+            // draw scene to shadow map
             mShadowDepthMap->Clear(context.commandList, 0, 0);
          
             pointLight->ShadowMap->SetAsRenderTarget(context.commandList, face, 0, *mShadowDepthMap, 0, 0);
@@ -261,22 +401,7 @@ void ShadowPass::DrawPointLightShadow(const GraphicContext& context)
                 XMLoadFloat3(&pointLight->Position), GetCubeFaceNormal(face)
             );
 
-            int currMaterialID = -1;
-            for (auto instance : instances)
-            {
-                context.commandList->SetGraphicsRootConstantBufferView(
-                    (int)RootSignatureParam::ObjectConstant,
-                    context.frameResource->ConstantObject->GetElementGPUAddress(instance->GetID()));
-                // set material if need
-                if (currMaterialID != instance->GetMaterial()->GetID())
-                {
-                    currMaterialID = instance->GetMaterial()->GetID();
-                    context.commandList->SetGraphicsRootConstantBufferView((int)RootSignatureParam::MaterialConstant,
-                        context.frameResource->ConstantMaterial->GetElementGPUAddress(currMaterialID));
-                }
-
-                instance->GetMesh()->Draw(context.commandList);
-            }
+            DrawInstanceShadow(context, instances);
         }
 
         pointLight->ShadowMap->TransitionTo(context.commandList, RenderTextureState::Read);
@@ -286,11 +411,34 @@ void ShadowPass::DrawPointLightShadow(const GraphicContext& context)
 void ShadowPass::UpdateShadowConstant(const GraphicContext& context)
 {
     mShadowConstant.ShadowMaxDistance = context.scene->GetCamera()->GetShadowMaxDistance();
+    mShadowConstant.cascadeCount = context.scene->GetCamera()->GetCascadeCount();
     context.frameResource->ConstantShadow->CopyData(mShadowConstant);
 }
 
-float ShadowPass::CalcPerspectiveNormalBias(float baseBias, float fovY, float resolution)
+float ShadowPass::CalcPerspectiveShadowBias(float baseBias, float fovY, float resolution)
 {
     float texelSizeAtDepthOne = 2.0f / (tanf(0.5f * fovY) * resolution);
     return baseBias * texelSizeAtDepthOne * 1.4142136f;
+}
+
+void ShadowPass::DrawInstanceShadow(const GraphicContext& context, const vector<Instance*>& instances)
+{
+    int currMaterialID = -1;
+    for (auto instance : instances)
+    {
+        context.commandList->SetGraphicsRootConstantBufferView(
+            (int)RootSignatureParam::ObjectConstant,
+            context.frameResource->ConstantObject->GetElementGPUAddress(instance->GetID()));
+
+        // set material if need
+        if (currMaterialID != instance->GetMaterial()->GetID())
+        {
+            currMaterialID = instance->GetMaterial()->GetID();
+            context.commandList->SetGraphicsRootConstantBufferView(
+                (int)RootSignatureParam::MaterialConstant,
+                context.frameResource->ConstantMaterial->GetElementGPUAddress(currMaterialID));
+        }
+
+        instance->GetMesh()->Draw(context.commandList);
+    }
 }

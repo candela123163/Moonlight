@@ -7,7 +7,7 @@ using namespace std;
 
 XMVECTOR Camera::GetPosition() const
 {
-	return XMLoadFloat3(&mPosition);
+	return XMVectorSetW(XMLoadFloat3(&mPosition), 1.0f);
 }
 
 XMFLOAT3 Camera::GetPosition3f() const
@@ -31,7 +31,7 @@ void Camera::SetPosition(const XMFLOAT3& v)
 
 XMVECTOR Camera::GetRight() const
 {
-	return XMLoadFloat3(&mRight);
+	return XMVector3Normalize(XMLoadFloat3(&mRight));
 }
 
 XMFLOAT3 Camera::GetRight3f() const
@@ -41,7 +41,7 @@ XMFLOAT3 Camera::GetRight3f() const
 
 XMVECTOR Camera::GetUp() const
 {
-	return XMLoadFloat3(&mUp);
+	return XMVector3Normalize(XMLoadFloat3(&mUp));
 }
 
 XMFLOAT3 Camera::GetUp3f() const
@@ -51,7 +51,7 @@ XMFLOAT3 Camera::GetUp3f() const
 
 XMVECTOR Camera::GetLook() const
 {
-	return XMLoadFloat3(&mLook);
+	return XMVector3Normalize(XMLoadFloat3(&mLook));
 }
 
 XMFLOAT3 Camera::GetLook3f() const
@@ -124,8 +124,6 @@ void Camera::SetLens(float fovY, float aspect, float zn, float zf)
 #endif
 
 	MarkConstantDirty();
-
-	UpdateShadowConfig();
 }
 
 void Camera::LookAt(FXMVECTOR pos, FXMVECTOR target, FXMVECTOR worldUp)
@@ -290,21 +288,43 @@ void Camera::UpdateConstant(const GraphicContext& context)
 void Camera::SetShadowMaxDistance(float distance)
 {
 	mMaxShadowDistance = distance;
-	UpdateShadowConfig();
 }
 
-void Camera::SetShadowCascadeRatio(std::array<float, MAX_CASCADE_COUNT> cascadeRatio)
+void Camera::SetShadowCascadeRatio(std::array<float, MAX_CASCADE_COUNT> cascadeRatio, int cascadeCount)
 {
+	mCascadeCount = min(MAX_CASCADE_COUNT, cascadeCount);
 	mShadowCascadeRatio = cascadeRatio;
-	UpdateShadowConfig();
 }
 
 void Camera::UpdateShadowConfig()
 {
 	mMaxShadowDistance = min(mMaxShadowDistance, mFarZ);
 	BoundingFrustum::CreateFromMatrix(mShadowCullFrustum, XMMatrixPerspectiveFovLH(mFovY, mAspect, mNearZ, mMaxShadowDistance));
-	for (size_t i = 0; i < MAX_CASCADE_COUNT; i++)
+	for (size_t i = 0; i < mCascadeCount - 1; i++)
 	{
 		mShadowCascadeDistance[i] = mMaxShadowDistance * mShadowCascadeRatio[i];
 	}
+	mShadowCascadeDistance[0] = max(mNearZ + 1.0f, mShadowCascadeDistance[0]);
+	mShadowCascadeDistance[mCascadeCount - 1] = mMaxShadowDistance;
+}
+
+array<XMVECTOR, 4> Camera::GetFrustumPlaneConers(float distance) const
+{
+	XMVECTOR pos = GetPosition();
+	XMVECTOR up = GetUp();
+	XMVECTOR forward = GetLook();
+	XMVECTOR right = GetRight();
+	float upLength = distance * tan(mFovY * 0.5);
+	float rightLength = upLength * mAspect;
+	XMVECTOR center = pos + distance * forward;
+	XMVECTOR upVector = up * upLength;
+	XMVECTOR rightVector = right * rightLength;
+
+	array<XMVECTOR, 4> corners;
+	corners[0] = center - rightVector + upVector;
+	corners[1] = center + rightVector + upVector;
+	corners[2] = center + rightVector - upVector;
+	corners[3] = center - rightVector - upVector;
+
+	return corners;
 }

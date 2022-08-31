@@ -18,3 +18,16 @@ FrameResources::FrameResources(ID3D12Device* device)
     ConstantObject = make_unique<UploadBuffer<ObjectConstant, true>>(device, OBJECT_MAX_SIZE);
     ConstantMaterial = make_unique<UploadBuffer<MaterialConstant, true>>(device, MATERIAL_MAX_SIZE);
 }
+
+PassData* FrameResources::GetOrCreate(PassBase* key, std::function<std::unique_ptr<PassData>()> createFunc)
+{
+    auto ite = mPassResource.find(key);
+    if (ite == mPassResource.end())
+    {
+        return (mPassResource[key] = createFunc()).get();
+    }
+    else
+    {
+        return ite->second.get();
+    }
+}

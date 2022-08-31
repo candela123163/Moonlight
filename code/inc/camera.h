@@ -68,13 +68,21 @@ public:
 
 	// shadow related
 	void SetShadowMaxDistance(float distance);
-	void SetShadowCascadeRatio(std::array<float, MAX_CASCADE_COUNT> cascadeRatio);
+	void SetShadowCascadeRatio(std::array<float, MAX_CASCADE_COUNT> cascadeRatio, int cascadeCount);
 
 	float GetShadowMaxDistance() const { return mMaxShadowDistance; }
 	std::array<float, MAX_CASCADE_COUNT> GetShadowCascadeDistance() const { return mShadowCascadeDistance; }
+	int GetCascadeCount() const { return mCascadeCount; }
 	DirectX::BoundingFrustum GetShadowCullFrustum() const { return mShadowCullFrustum; }
 
-private:
+	/*
+	* corner sequence:
+	*	0-----1
+	*	|	  |
+	*	3-----2
+	*/
+	std::array<DirectX::XMVECTOR, 4> GetFrustumPlaneConers(float distance) const;
+
 	void UpdateShadowConfig();
 
 private:
@@ -108,5 +116,6 @@ private:
 	float mMaxShadowDistance = 10.0f;
 	std::array<float, MAX_CASCADE_COUNT> mShadowCascadeRatio;
 	std::array<float, MAX_CASCADE_COUNT> mShadowCascadeDistance;
+	int mCascadeCount;
 	DirectX::BoundingFrustum mShadowCullFrustum;
 };

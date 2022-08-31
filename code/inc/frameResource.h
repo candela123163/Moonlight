@@ -87,6 +87,9 @@ struct ShadowCasterConstant
     // for point & spot light w is 1 / range
     DirectX::XMFLOAT3 LightPosition;
     float LightInvRange;
+
+    float NearZ;
+    DirectX::XMFLOAT3 pad;
 };
 
 struct ShadowConst
@@ -98,7 +101,7 @@ struct ShadowConst
         int shadowMapIndex;
         float cascadeDistance;
         float shadowBias;
-        float softValue;
+        float pad;
     };
 
     struct PointShadow
@@ -124,8 +127,17 @@ struct ShadowConst
     SpotShadow ShadowSpot[MAX_SPOT_LIGHT_COUNT];
 
     float ShadowMaxDistance;
-    DirectX::XMFLOAT3 pad;
+    int cascadeCount;
+    int sunCastShadow;
+    float pad;
 };
+
+struct PassData
+{
+    virtual ~PassData() {}
+};
+
+class PassBase;
 
 struct FrameResources
 {
@@ -146,4 +158,9 @@ struct FrameResources
 
     std::unique_ptr<UploadBuffer<ObjectConstant, true>> ConstantObject;
     std::unique_ptr<UploadBuffer<MaterialConstant, true>> ConstantMaterial;
+
+    PassData* GetOrCreate(PassBase* key, std::function<std::unique_ptr<PassData>()> createFunc);
+
+private:
+    std::unordered_map<PassBase*, std::unique_ptr<PassData>> mPassResource;
 };

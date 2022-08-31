@@ -48,7 +48,7 @@ public:
     D3D12_VERTEX_BUFFER_VIEW VertexBufferView() const { return mVertexBufferView; }
     D3D12_INDEX_BUFFER_VIEW IndexBufferView() const { return mIndexBufferView; }
     UINT IndexCount() const { return mIndexCount; }
-    DirectX::BoundingBox GetBoundingBox() const { return mBoundingBox; }
+    DirectX::BoundingOrientedBox GetOBBX() const { return mOBBX; }
 
     static Mesh* GetOrLoad(int meshID, const aiScene* scene, int globalMeshIndex, const GraphicContext& context);
     void Draw(ID3D12GraphicsCommandList* commandList);
@@ -64,5 +64,5 @@ private:
     D3D12_INDEX_BUFFER_VIEW mIndexBufferView;
     UINT mIndexCount = 0;
 
-    DirectX::BoundingBox mBoundingBox;
+    DirectX::BoundingOrientedBox mOBBX;
 };
