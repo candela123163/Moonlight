@@ -159,7 +159,7 @@ void IBLPreprocessPass::PreprocessPass(const GraphicContext& context)
 
     // generate irradiance map
     context.commandList->SetPipelineState(mIrradiancePSO.Get());
-    mIrradianceMap->TransitionTo(context.commandList, RenderTextureState::Write);
+    mIrradianceMap->TransitionTo(context.commandList, TextureState::Write);
     for (size_t i = 0; i < 6; i++)
     {
         mIrradianceMap->Clear(context.commandList, i, 0);
@@ -167,11 +167,11 @@ void IBLPreprocessPass::PreprocessPass(const GraphicContext& context)
         context.commandList->SetGraphicsRootConstantBufferView((int)RootSignatureParam::IBLConstant, mConstant->GetElementGPUAddress(i));
         skybox.mesh->Draw(context.commandList);
     }
-    mIrradianceMap->TransitionTo(context.commandList, RenderTextureState::Read);
+    mIrradianceMap->TransitionTo(context.commandList, TextureState::Read);
 
     // generate prefilter map
     context.commandList->SetPipelineState(mPrefilterPSO.Get());
-    mPrefilterMap->TransitionTo(context.commandList, RenderTextureState::Write);
+    mPrefilterMap->TransitionTo(context.commandList, TextureState::Write);
     float constant32[2];
 
     for (size_t filterLevel = 0; filterLevel < mPrefilterLevel; filterLevel++)
@@ -189,5 +189,5 @@ void IBLPreprocessPass::PreprocessPass(const GraphicContext& context)
             skybox.mesh->Draw(context.commandList);
         }
     }
-    mPrefilterMap->TransitionTo(context.commandList, RenderTextureState::Read);
+    mPrefilterMap->TransitionTo(context.commandList, TextureState::Read);
 }

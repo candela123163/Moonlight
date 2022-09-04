@@ -31,12 +31,15 @@ VertexOut vs(VertexIn vin)
     vout.tangentW = mul(vin.tangentL, (float3x3) _World);
     vout.biTangentW = mul(vin.biTangentL, (float3x3) _World);
     vout.uv = vin.uv;
+    
 
     return vout;
 }
 
+
+
 float4 ps(VertexOut pin) : SV_TARGET
-{   
+{           
     pin.normalW = normalize(pin.normalW);
     pin.tangentW = normalize(pin.tangentW);
     pin.biTangentW = normalize(pin.biTangentW);
@@ -68,40 +71,7 @@ float4 ps(VertexOut pin) : SV_TARGET
     surface.shadowFade = GetShadowGlobalFade(surface.depth);
         
     float3 radiance = 0.0f;
-    
-    uint cascadeIndex = 0;
-    float blend = 1.0;
-    
-    //// =========== debug =========
-    //float2 uv = pin.posH.xy / float2(1400.0f, 800.0f);
-    //uint cascade_1_index = _ShadowCascade[0].shadowMapIndex;
-    //uint cascade_2_index = _ShadowCascade[1].shadowMapIndex;
-    //uint texIndex;
-    //float3 color;
-    //// debug case 1 - still has bug
-    //if (uv.x < 0.5f)
-    //{
-    //    texIndex = cascade_1_index;
-    //}
-    //else
-    //{
-    //    texIndex = cascade_2_index;
-    //}
-    //return _2DMaps[texIndex].Sample(_SamplerLinearClamp, uv).rrra;
-    
-    //// debug case 2 - ok, but why?
-    //if (uv.x < 0.5f)
-    //{
-    //    color = _2DMaps[cascade_1_index].Sample(_SamplerLinearClamp, uv).rrra;
-    //}
-    //else
-    //{
-    //    color = _2DMaps[cascade_2_index].Sample(_SamplerLinearClamp, uv).rrra;
-    //}
-    //return float4(color, 1.0f);
-    //// =========== debug end =========
-
-    
+        
     // direct Light
     radiance += Shading(surface, GetSun(surface));
     

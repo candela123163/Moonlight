@@ -6,8 +6,8 @@
 #include "ShadowSamplingTent.hlsli"
 #include "Util.hlsli"
 
-#define FILTER_SAMPLER_SIZE 16
-#define FILTER_SETUP SampleShadow_ComputeSamples_Tent_7x7
+#define FILTER_SAMPLER_SIZE 9
+#define FILTER_SETUP SampleShadow_ComputeSamples_Tent_5x5
 
 float ShadowFade(float depth, float maxDepth, float factor)
 {
@@ -89,7 +89,7 @@ float GetPointShadowAttenuation(Surface surface, uint index)
 }
 
 // Directional Shadow
-float3 FilterSunShadow(uint cascadeIndex, float2 uv, float compareDepth)
+float FilterSunShadow(uint cascadeIndex, float2 uv, float compareDepth)
 {
     float weights[FILTER_SAMPLER_SIZE];
     float2 positions[FILTER_SAMPLER_SIZE];
@@ -103,29 +103,8 @@ float3 FilterSunShadow(uint cascadeIndex, float2 uv, float compareDepth)
     {
         attenuation += weights[i] * GetSunShadowMapValue(cascadeIndex, positions[i], compareDepth);
     }
-       
-    // visualize cascade index for test    
-    float3 color;
-    if (cascadeIndex == 0)
-    {
-        color = attenuation * float3(1.0f, 0.0f, 0.0f);
-    }
-    else if(cascadeIndex == 1)
-    {
-        color = attenuation * float3(0.0f, 1.0f, 0.0f);
-    }
-    else if (cascadeIndex == 2)
-    {
-        color = attenuation * float3(0.0f, 0.0f, 1.0f);
-    }
-    else
-    {
-        color = attenuation * float3(1.0f, 1.0f, 0.0f);
-    }
-    
-    return color;
-    
-    //return attenuation;
+      
+    return attenuation;
 }
 
 void GetSunShadowCascade(float depth, out uint cascadeIndex, out float cascadeStrength)
@@ -133,7 +112,7 @@ void GetSunShadowCascade(float depth, out uint cascadeIndex, out float cascadeSt
     cascadeIndex = 0;
     cascadeStrength = 1.0f;
     float3 attenuation = 1.0f;
-    
+
     [loop]
     for (; cascadeIndex < _CascadeCount; cascadeIndex++)
     {
@@ -146,9 +125,9 @@ void GetSunShadowCascade(float depth, out uint cascadeIndex, out float cascadeSt
     }
 }
 
-float3 GetSunShadowAttenuation(Surface surface)
+float GetSunShadowAttenuation(Surface surface)
 {
-    float3 attenuation = 1.0f;
+    float attenuation = 1.0f;
     float shadowStrength = surface.shadowFade;
     
     if (_SunCastShadow == 1 && surface.shadowFade > 0.01f)

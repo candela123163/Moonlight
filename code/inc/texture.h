@@ -11,6 +11,15 @@ enum class TextureDimension
     Tex2DArray = 2
 };
 
+enum class TextureState
+{
+    Write = 0,
+    Read = 1,
+    Common = 2,
+    CopySrouce = 3,
+    CopyDest = 4
+};
+
 class ITexture
 {
 public:
@@ -23,16 +32,21 @@ public:
     ID3D12Resource* GetResource() const { return mTexture.Get(); }
     void BindSRV(ID3D12Device* device, DescriptorHeap* descriptorHeap);
     void BindSRV(ID3D12Device* device, const DescriptorData& descriptorData);
+    bool TransitionTo(ID3D12GraphicsCommandList* commandList, TextureState targetState);
+    bool CopyResource(ID3D12GraphicsCommandList* commandList, ITexture& copySource);
     const DescriptorData& GetSrvDescriptorData() const { return mSrvDescriptorData; }
 
     UINT GetWidth() const { return mWidth; }
     UINT GetHeight() const { return mHeight; }
+    DXGI_FORMAT GetFormat() const { return mFormat; }
     UINT GetDepthCount() const { return mDepthCount; }
     UINT GetMipCount() const { return mMipCount; }
     TextureDimension GetDimension() const { return mDimension; }
+    TextureState GetTextureState() const { return mCurrState; }
         
 protected:
     virtual void GetSRVDes(D3D12_SHADER_RESOURCE_VIEW_DESC& outDesc) = 0;
+    virtual bool GetD3DState(TextureState state, D3D12_RESOURCE_STATES& outState) = 0;
 
 protected:
     Microsoft::WRL::ComPtr<ID3D12Resource> mTexture = nullptr;
@@ -40,6 +54,7 @@ protected:
     TextureDimension mDimension = TextureDimension::Tex2D;
     DXGI_FORMAT mFormat = DXGI_FORMAT_UNKNOWN;
     DescriptorData mSrvDescriptorData;
+    TextureState mCurrState;
 };
 
 
@@ -56,6 +71,7 @@ public:
 
 protected:
     void GetSRVDes(D3D12_SHADER_RESOURCE_VIEW_DESC& outDesc) override;
+    bool GetD3DState(TextureState state, D3D12_RESOURCE_STATES& outState) override;
 };
 
 
@@ -66,12 +82,6 @@ enum class RenderTextureUsage
     DepthBuffer = 1
 };
 
-enum class RenderTextureState
-{
-    Write = 0,
-    Read = 1,
-    Common = 2
-};
 
 class RenderTexture final : public ITexture
 {
@@ -80,15 +90,14 @@ public:
         UINT width, UINT height,
         UINT depthCount, UINT mipCount, TextureDimension dimension,
         RenderTextureUsage usage, DXGI_FORMAT format,
-        RenderTextureState initState = RenderTextureState::Common);
+        TextureState initState = TextureState::Common,
+        const D3D12_CLEAR_VALUE* clearValue = nullptr);
 
     void BindRTV(ID3D12Device* device, 
         D3D12_CPU_DESCRIPTOR_HANDLE descriptor,
         UINT depthSlice = 0, UINT mipLevel = 0);
 
     void BindRTV(ID3D12Device* device, DescriptorHeap* descriptorHeap);
-
-    void TransitionTo(ID3D12GraphicsCommandList* commandList, RenderTextureState targetState);
 
     void SetViewPort(ID3D12GraphicsCommandList* commandList, UINT mipLevel = 0);
 
@@ -111,10 +120,35 @@ public:
 
 private:
     void GetSRVDes(D3D12_SHADER_RESOURCE_VIEW_DESC& outDesc) override;
-    D3D12_RESOURCE_STATES GetD3DState(RenderTextureState state);
+    bool GetD3DState(TextureState state, D3D12_RESOURCE_STATES& outState) override;
 
 private:
-    RenderTextureState mCurrState;
     RenderTextureUsage mUsage;
     DescriptorData mRtvDescriptorData;
+    D3D12_CLEAR_VALUE mClearValue;
+};
+
+// ----------- UnorderAccessTexture -------------
+class UnorderAccessTexture final : public ITexture
+{
+public:
+    UnorderAccessTexture(ID3D12Device* device, DescriptorHeap* descriptorHeap,
+        UINT width, UINT height, 
+        DXGI_FORMAT format,
+        TextureState initState = TextureState::Common);
+
+    void BindUAV(ID3D12Device* device,
+        D3D12_CPU_DESCRIPTOR_HANDLE descriptor);
+
+    void BindUAV(ID3D12Device* device, DescriptorHeap* descriptorHeap);
+
+    const DescriptorData& GetUavDescriptorData() const { return mUavDescriptorData; }
+
+protected:
+    bool GetD3DState(TextureState state, D3D12_RESOURCE_STATES& outState) override;
+    void GetSRVDes(D3D12_SHADER_RESOURCE_VIEW_DESC& outDesc) override;
+
+private:
+    
+    DescriptorData mUavDescriptorData;
 };

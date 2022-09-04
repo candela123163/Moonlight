@@ -128,13 +128,15 @@ void DebugPass::DrawPass(const GraphicContext& context)
         }
         
     }
+    
+
     context.commandList->SetGraphicsRoot32BitConstants((int)RootSignatureParam::Constant32UInt, 10, &mapIndices, 0);
 
     // Draw fullscreen quad.
     context.commandList->IASetVertexBuffers(0, 0, nullptr);
     context.commandList->IASetIndexBuffer(nullptr);
     context.commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-    context.commandList->DrawInstanced(6, 1, 0, 0);
+    context.commandList->DrawInstanced(3, 1, 0, 0);
 }
 
 void DebugPass::ReleasePass(const GraphicContext& context)

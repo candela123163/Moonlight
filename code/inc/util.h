@@ -36,6 +36,8 @@ Microsoft::WRL::ComPtr<ID3DBlob> CompileShader(
     const std::string& target);
 
 
+D3D12_SHADER_BYTECODE LoadShader(std::wstring shaderCsoFile);
+
 bool IsKeyDown(int vKeycode);
 
 

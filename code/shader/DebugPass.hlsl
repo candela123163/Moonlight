@@ -1,8 +1,6 @@
 #include "Constant.hlsli"
 #include "StaticSamplers.hlsli"
 
-DEFINE_RENDER_TARGET_SIZE_CONSTANT(b0)
-
 cbuffer MapIndicesConstant : register(b1)
 {
     uint m0;
@@ -21,69 +19,39 @@ cbuffer MapIndicesConstant : register(b1)
 Texture2D _2DMaps[TEXTURE_ARRAY_SIZE] : register(t0, space0);
 TextureCube _CubeMaps[TEXTURE_ARRAY_SIZE] : register(t0, space1);
 
-static const float2 gTexCoords[6] =
-{
-    float2(0.0f, 1.0f),
-    float2(0.0f, 0.0f),
-    float2(1.0f, 0.0f),
-    float2(0.0f, 1.0f),
-    float2(1.0f, 0.0f),
-    float2(1.0f, 1.0f)
-};
- 
-struct VertexOut
-{
-    float4 PosH : SV_POSITION;
-    float3 PosV : POSITION;
-    float2 TexC : TEXCOORD0;
-};
 
+#define FullScreenTriangle_VS vs
+#include "FullScreenVS.hlsli"
 
-VertexOut vs(uint vid : SV_VertexID)
+float4 ps(PostProc_VSOut pin) : SV_TARGET
 {
-    VertexOut vout;
-    vout.TexC = gTexCoords[vid];
-    vout.PosH = float4(2.0f * vout.TexC.x - 1.0f, 1.0f - 2.0f * vout.TexC.y, 0.0f, 1.0f);
-#ifdef REVERSE_Z
-    vout.PosH.z = 1.0f;
-#endif
-    return vout;
-}
-
-
-float4 ps(VertexOut pin) : SV_TARGET
-{
+    float2 uv = pin.uv;
+    uint texIndex;
     
-    
-    float2 uv = pin.TexC;
-    
-    if(uv.x < 0.5f && uv.y < 0.5f)
+    if(uv.x <= 0.5f && uv.y <= 0.5f)
     {
         uv *= 2.0f;
-        return _2DMaps[m0].Sample(_SamplerLinearClamp, uv).rrra;
+        texIndex = m0;
     }
-    else if(uv.x < 1.0f && uv.y < 0.5f)
+    else if(uv.x <= 1.0f && uv.y <= 0.5f)
     {
         uv.x = uv.x * 2.0f - 1.0f;
         uv.y *= 2.0f;
-        return _2DMaps[m1].Sample(_SamplerLinearClamp, uv).rrra;
+        texIndex = m1;
     }
-    else if(uv.x < 0.5f && uv.y < 1.0f)
+    else if(uv.x <= 0.5f && uv.y <= 1.0f)
     {
         uv.x *= 2.0f;
         uv.y = uv.y * 2.0f - 1.0f;
-        return _2DMaps[m2].Sample(_SamplerLinearClamp, uv).rrra;
+        texIndex = m2;
     }
     else
     {
         uv.x = uv.x * 2.0f - 1.0f;
         uv.y = uv.y * 2.0f - 1.0f;
-        return _2DMaps[m3].Sample(_SamplerLinearClamp, uv).rrra;
+        texIndex = 3;    
     }
     
-  
-    
-    
-    
+    return _2DMaps[texIndex].Sample(_SamplerLinearClamp, uv);
     
 }

@@ -142,9 +142,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="code\inc\camera.cpp">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Use</PrecompiledHeader>
-    </ClCompile>
+    <ClCompile Include="code\src\camera.cpp" />
     <ClCompile Include="code\src\debugPass.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Use</PrecompiledHeader>
     </ClCompile>
@@ -158,6 +156,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Use</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="code\src\globals.cpp" />
+    <ClCompile Include="code\src\HBAOPass.cpp" />
     <ClCompile Include="code\src\IBLPreprocessPass.cpp" />
     <ClCompile Include="code\src\main.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Use</PrecompiledHeader>
@@ -193,6 +192,7 @@
     <ClInclude Include="code\inc\gameApp.h" />
     <ClInclude Include="code\inc\globals.h" />
     <ClInclude Include="code\inc\graphicContext.h" />
+    <ClInclude Include="code\inc\HBAOPass.h" />
     <ClInclude Include="code\inc\IBLPreprocessPass.h" />
     <ClInclude Include="code\inc\light.h" />
     <ClInclude Include="code\inc\material.h" />

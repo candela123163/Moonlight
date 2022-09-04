@@ -113,15 +113,15 @@ void ShadowPass::PreparePass(const GraphicContext& context)
     shadowPsoDesc.RTVFormats[0] = DXGI_FORMAT_UNKNOWN;
     shadowPsoDesc.SampleDesc.Count = 1;
     shadowPsoDesc.SampleDesc.Quality = 0;
-    shadowPsoDesc.DSVFormat = DXGI_FORMAT_D32_FLOAT;
+    shadowPsoDesc.DSVFormat = DXGI_FORMAT_D16_UNORM;
 
     ThrowIfFailed(context.device->CreateGraphicsPipelineState(&shadowPsoDesc, IID_PPV_ARGS(mShadowPSO.GetAddressOf())));
 
     // point shadow
     D3D12_GRAPHICS_PIPELINE_STATE_DESC pointShadowPsoDesc = shadowPsoDesc;
     pointShadowPsoDesc.NumRenderTargets = 1;
-    pointShadowPsoDesc.RTVFormats[0] = DXGI_FORMAT_R32_FLOAT;
-    pointShadowPsoDesc.DSVFormat = DXGI_FORMAT_D32_FLOAT;
+    pointShadowPsoDesc.RTVFormats[0] = DXGI_FORMAT_R16_UNORM;
+    pointShadowPsoDesc.DSVFormat = DXGI_FORMAT_D16_UNORM;
     pointShadowPsoDesc.VS =
     {
         reinterpret_cast<BYTE*>(vs2->GetBufferPointer()),
@@ -287,7 +287,7 @@ void ShadowPass::DrawSunShadow(const GraphicContext& context)
             context.frameResource->ConstantShadowCaster->GetElementGPUAddress(sunConstantOffset + i));
 
         // set render target
-        sun.ShadowMaps[i]->TransitionTo(context.commandList, RenderTextureState::Write);
+        sun.ShadowMaps[i]->TransitionTo(context.commandList, TextureState::Write);
         sun.ShadowMaps[i]->SetAsRenderTarget(context.commandList, 0, 0);
 
         // draw scene to shadow map
@@ -296,7 +296,7 @@ void ShadowPass::DrawSunShadow(const GraphicContext& context)
             sunWorldPos, XMLoadFloat3(&sun.Direction));
         DrawInstanceShadow(context, instances);
 
-        sun.ShadowMaps[i]->TransitionTo(context.commandList, RenderTextureState::Read);
+        sun.ShadowMaps[i]->TransitionTo(context.commandList, TextureState::Read);
     }
 
 }
@@ -338,7 +338,7 @@ void ShadowPass::DrawSpotLightShadow(const GraphicContext& context)
             context.frameResource->ConstantShadowCaster->GetElementGPUAddress(spotConstantOffset + i));
         
         // draw scene to shadow map
-        spotLight->ShadowMap->TransitionTo(context.commandList, RenderTextureState::Write);
+        spotLight->ShadowMap->TransitionTo(context.commandList, TextureState::Write);
         spotLight->ShadowMap->SetAsRenderTarget(context.commandList, 0, 0);
 
         const auto& instances = context.scene->GetVisibleRenderInstances(
@@ -348,7 +348,7 @@ void ShadowPass::DrawSpotLightShadow(const GraphicContext& context)
         
         DrawInstanceShadow(context, instances);
 
-        spotLight->ShadowMap->TransitionTo(context.commandList, RenderTextureState::Read);
+        spotLight->ShadowMap->TransitionTo(context.commandList, TextureState::Read);
     }
 }
 
@@ -377,7 +377,7 @@ void ShadowPass::DrawPointLightShadow(const GraphicContext& context)
             continue;
         }
 
-        pointLight->ShadowMap->TransitionTo(context.commandList, RenderTextureState::Write);
+        pointLight->ShadowMap->TransitionTo(context.commandList, TextureState::Write);
 
         for (size_t face = 0; face < 6; face++)
         {
@@ -404,7 +404,7 @@ void ShadowPass::DrawPointLightShadow(const GraphicContext& context)
             DrawInstanceShadow(context, instances);
         }
 
-        pointLight->ShadowMap->TransitionTo(context.commandList, RenderTextureState::Read);
+        pointLight->ShadowMap->TransitionTo(context.commandList, TextureState::Read);
     }
 }
 

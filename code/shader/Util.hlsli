@@ -29,10 +29,27 @@ float3 NormalTangentToWorld(float3 normalTS, float3 T, float3 B, float3 N)
 
 float3 NormalTangentToWorld(float3 normalTs, float3 N)
 {
-    float3 up = abs(N.z) < 0.999f ? float3(0.0f, 0.0f, 1.0f) : float3(1.0f, 0.0f, 0.0f);
-    float3 T = normalize(cross(up, N));
+    float3 forward = abs(N.z) < 0.999f ? float3(0.0f, 0.0f, 1.0f) : float3(1.0f, 0.0f, 0.0f);
+    float3 T = normalize(cross(forward, N));
     float3 B = cross(N, T);
     return NormalTangentToWorld(normalTs, T, B, N);
+}
+
+float NDCDepthToViewDepth(float ndcDepth, float near, float far)
+{
+#ifdef REVERSE_Z
+    float temp = far;
+    far = near;
+    near = temp;
+#endif
+    return near * far / (far - ndcDepth * (far - near));
+}
+
+float4 NDCToViewPosition(float2 screenCoord, float ndcDepth, float near, float far, float4x4 invProject)
+{
+    float viewDepth = NDCDepthToViewDepth(ndcDepth, near, far);
+    float4 posH = float4(screenCoord, ndcDepth, 1.0f) * viewDepth;
+    return mul(posH, invProject);
 }
 // ==========================================================================
 

@@ -20,7 +20,7 @@ struct Light
     float3 color;
     float intensity;
     float3 direction;
-    float3 attenuation;
+    float attenuation;
 };
 
 struct EnvLight

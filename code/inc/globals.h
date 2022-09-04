@@ -3,6 +3,7 @@
 
 class Texture;
 class RenderTexture;
+class UnorderAccessTexture;
 class Mesh;
 class Material;
 
@@ -31,8 +32,8 @@ namespace Globals
     // light related
     #define MAX_POINT_LIGHT_COUNT 4
     #define MAX_SPOT_LIGHT_COUNT 4
-    #define POINT_LIGHT_SHADOWMAP_RESOLUTION 256
-    #define SPOT_LIGHT_SHADOWMAP_RESOLUTION 256
+    #define POINT_LIGHT_SHADOWMAP_RESOLUTION 512
+    #define SPOT_LIGHT_SHADOWMAP_RESOLUTION 512
     #define DIRECTION_LIGHT_SHADOWMAP_RESOLUTION 1024
     #define MAX_CASCADE_COUNT 4
     
@@ -55,4 +56,5 @@ namespace Globals
     extern ResourceContainer<Mesh> MeshContainer;
     extern ResourceContainer<Material> MaterialContainer;
     extern ResourceContainer<RenderTexture> RenderTextureContainer;
+    extern ResourceContainer<UnorderAccessTexture> UATextureContainer;
 }

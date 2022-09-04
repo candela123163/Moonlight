@@ -38,9 +38,9 @@ Microsoft::WRL::ComPtr<ID3DBlob> CompileShader(
 	const std::string& entrypoint,
 	const std::string& target)
 {
-	UINT compileFlags = 0;
+	UINT compileFlags = D3DCOMPILE_ENABLE_UNBOUNDED_DESCRIPTOR_TABLES;
 #if defined(DEBUG) || defined(_DEBUG)  
-	compileFlags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION | D3DCOMPILE_ENABLE_UNBOUNDED_DESCRIPTOR_TABLES;
+	compileFlags |= D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION ;
 #endif
 
 	HRESULT hr = S_OK;
@@ -56,6 +56,17 @@ Microsoft::WRL::ComPtr<ID3DBlob> CompileShader(
 	ThrowIfFailed(hr);
 
 	return byteCode;
+}
+
+
+D3D12_SHADER_BYTECODE LoadShader(std::wstring shaderCsoFile)
+{
+    ID3DBlob* shaderBlob;
+    ThrowIfFailed(D3DReadFileToBlob(shaderCsoFile.c_str(), &shaderBlob));
+    D3D12_SHADER_BYTECODE shaderBytecode = {};
+    shaderBytecode.BytecodeLength = shaderBlob->GetBufferSize();
+    shaderBytecode.pShaderBytecode = shaderBlob->GetBufferPointer();
+    return shaderBytecode;
 }
 
 

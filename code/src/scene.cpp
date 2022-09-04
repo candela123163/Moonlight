@@ -149,7 +149,7 @@ bool Scene::LoadLight(const nlohmann::json& sceneConfig, const GraphicContext& c
             context.device, context.descriptorHeap,
             DIRECTION_LIGHT_SHADOWMAP_RESOLUTION, DIRECTION_LIGHT_SHADOWMAP_RESOLUTION,
             1, 1, TextureDimension::Tex2D,
-            RenderTextureUsage::DepthBuffer, DXGI_FORMAT_D32_FLOAT, RenderTextureState::Read
+            RenderTextureUsage::DepthBuffer, DXGI_FORMAT_D16_UNORM, TextureState::Read
             );
     }
 
@@ -186,7 +186,7 @@ bool Scene::LoadLight(const nlohmann::json& sceneConfig, const GraphicContext& c
             context.device, context.descriptorHeap,
             POINT_LIGHT_SHADOWMAP_RESOLUTION, POINT_LIGHT_SHADOWMAP_RESOLUTION,
             6, 1, TextureDimension::CubeMap,
-            RenderTextureUsage::ColorBuffer, DXGI_FORMAT_R32_FLOAT, RenderTextureState::Read
+            RenderTextureUsage::ColorBuffer, DXGI_FORMAT_R16_UNORM, TextureState::Read
             );
         
         auto views = GenerateCubeViewMatrices(XMLoadFloat3(&pointLight.Position));
@@ -250,7 +250,7 @@ bool Scene::LoadLight(const nlohmann::json& sceneConfig, const GraphicContext& c
             context.device, context.descriptorHeap,
             SPOT_LIGHT_SHADOWMAP_RESOLUTION, SPOT_LIGHT_SHADOWMAP_RESOLUTION,
             1, 1, TextureDimension::Tex2D,
-            RenderTextureUsage::DepthBuffer, DXGI_FORMAT_D32_FLOAT, RenderTextureState::Read
+            RenderTextureUsage::DepthBuffer, DXGI_FORMAT_D16_UNORM, TextureState::Read
             );
 
         spotLight.View = XMMatrixLookToLH(

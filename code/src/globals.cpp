@@ -89,4 +89,5 @@ namespace Globals
 	ResourceContainer<Mesh> MeshContainer;
 	ResourceContainer<Material> MaterialContainer;
 	ResourceContainer<RenderTexture> RenderTextureContainer;
+	ResourceContainer<UnorderAccessTexture> UATextureContainer;
 }

@@ -22,6 +22,42 @@ void ITexture::BindSRV(ID3D12Device* device, const DescriptorData& descriptorDat
     device->CreateShaderResourceView(mTexture.Get(), &SRVDesc, descriptorData.CPUHandle);
 }
 
+bool ITexture::TransitionTo(ID3D12GraphicsCommandList* commandList, TextureState targetState)
+{
+    if (targetState != mCurrState)
+    {
+        D3D12_RESOURCE_STATES current, target;
+        if (GetD3DState(mCurrState, current) && GetD3DState(targetState, target)) {
+            commandList->ResourceBarrier(1, get_rvalue_ptr(CD3DX12_RESOURCE_BARRIER::Transition(mTexture.Get(), current, target)));
+            mCurrState = targetState;
+            return true;
+        }
+        return false;
+    }
+    return true;
+}
+
+bool ITexture::CopyResource(ID3D12GraphicsCommandList* commandList, ITexture& copySource)
+{
+    if (!(GetWidth() == copySource.GetWidth() &&
+        GetHeight() == copySource.GetHeight() &&
+        GetFormat() == copySource.GetFormat()))
+    {
+        return false;
+    }
+
+    TextureState destPreState = GetTextureState();
+    TextureState srcPreState = copySource.GetTextureState();
+    if (TransitionTo(commandList, TextureState::CopyDest) &&
+        copySource.TransitionTo(commandList, TextureState::CopySrouce))
+    {
+        commandList->CopyResource(GetResource(), copySource.GetResource());
+        TransitionTo(commandList, destPreState);
+        copySource.TransitionTo(commandList, srcPreState);
+        return true;
+    }
+    return false;
+}
 
 // ----------- Texture -------------
 Texture::Texture(ID3D12Device* device, 
@@ -54,6 +90,7 @@ Texture::Texture(ID3D12Device* device,
     mMipCount = desc.MipLevels;
     mFormat = desc.Format;
     mDimension = isCube ? TextureDimension::CubeMap : (mDepthCount > 1 ? TextureDimension::Tex2DArray : TextureDimension::Tex2D);
+    mCurrState = TextureState::Read;
 
     BindSRV(device, descriptorHeap);
 }
@@ -107,13 +144,35 @@ Texture* Texture::GetOrLoad(const filesystem::path& texturePath, const GraphicCo
     return Globals::TextureContainer.Get(textureKey);
 }
 
+bool Texture::GetD3DState(TextureState state, D3D12_RESOURCE_STATES& outState)
+{
+    assert(state != TextureState::Write);
+    assert(state != TextureState::CopyDest);
+
+    switch (state)
+    {
+    case TextureState::Read:
+        outState = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+        break;
+    case TextureState::Common:
+        outState = D3D12_RESOURCE_STATE_COMMON;
+        break;
+    case TextureState::CopySrouce:
+        outState = D3D12_RESOURCE_STATE_COPY_SOURCE;
+        break;
+    default:
+        return false;
+    }
+    return true;
+}
+
 
 // ----------- RenderTexture -------------
 RenderTexture::RenderTexture(ID3D12Device* device, DescriptorHeap* descriptorHeap,
     UINT width, UINT height,
     UINT depthCount, UINT mipCount, TextureDimension dimension,
     RenderTextureUsage usage, DXGI_FORMAT format,
-    RenderTextureState initState)
+    TextureState initState, const D3D12_CLEAR_VALUE* clearValue)
 {
     mWidth = width;
     mHeight = height;
@@ -136,60 +195,74 @@ RenderTexture::RenderTexture(ID3D12Device* device, DescriptorHeap* descriptorHea
     texDesc.SampleDesc.Count = 1;
     texDesc.SampleDesc.Quality = 0;
     texDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+    texDesc.Flags = mUsage == RenderTextureUsage::ColorBuffer ? 
+        D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET : D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
 
-    D3D12_CLEAR_VALUE optClear;
-    optClear.Format = mFormat;
-
-    if (mUsage == RenderTextureUsage::ColorBuffer)
+    if (clearValue)
     {
-        optClear.Color[0] = 0.0f;
-        optClear.Color[1] = 0.0f;
-        optClear.Color[2] = 0.0f;
-        optClear.Color[3] = 0.0f;
-        texDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
+        mClearValue = *clearValue;
+        mClearValue.Format = mFormat;
     }
-    else
-    {
-        texDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
+    else {
+        mClearValue.Format = mFormat;
+
+        if (mUsage == RenderTextureUsage::ColorBuffer)
+        {
+            mClearValue.Color[0] = 0.0f;
+            mClearValue.Color[1] = 0.0f;
+            mClearValue.Color[2] = 0.0f;
+            mClearValue.Color[3] = 0.0f;
+        }
+        else
+        {
 #ifdef REVERSE_Z
-        optClear.DepthStencil.Depth = 0.0f;
+            mClearValue.DepthStencil.Depth = 0.0f;
 #else
-        optClear.DepthStencil.Depth = 1.0f;
+            mClearValue.DepthStencil.Depth = 1.0f;
 #endif
-        optClear.DepthStencil.Stencil = 0;
+            mClearValue.DepthStencil.Stencil = 0;
     }
-    
+}
+    D3D12_RESOURCE_STATES state;
+    GetD3DState(initState, state);
     ThrowIfFailed(device->CreateCommittedResource(
         get_rvalue_ptr(CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT)),
         D3D12_HEAP_FLAG_NONE,
         &texDesc,
-        GetD3DState(initState),
-        &optClear,
+        state,
+        &mClearValue,
         IID_PPV_ARGS(mTexture.GetAddressOf())));
     
     BindRTV(device, descriptorHeap);
     BindSRV(device, descriptorHeap);
 }
 
-D3D12_RESOURCE_STATES RenderTexture::GetD3DState(RenderTextureState state)
+bool RenderTexture::GetD3DState(TextureState state, D3D12_RESOURCE_STATES& outState)
 {
-    D3D12_RESOURCE_STATES d3dState;
+
     switch (state)
     {
-    case RenderTextureState::Write:
-        d3dState = mUsage == RenderTextureUsage::ColorBuffer ? D3D12_RESOURCE_STATE_RENDER_TARGET : D3D12_RESOURCE_STATE_DEPTH_WRITE;
+    case TextureState::Write:
+        outState = mUsage == RenderTextureUsage::ColorBuffer ? D3D12_RESOURCE_STATE_RENDER_TARGET : D3D12_RESOURCE_STATE_DEPTH_WRITE;
         break;
-    case RenderTextureState::Read:
-        d3dState = mUsage == RenderTextureUsage::ColorBuffer ? D3D12_RESOURCE_STATE_GENERIC_READ : D3D12_RESOURCE_STATE_DEPTH_READ;
+    case TextureState::Read:
+        outState = mUsage == RenderTextureUsage::ColorBuffer ? D3D12_RESOURCE_STATE_GENERIC_READ : D3D12_RESOURCE_STATE_DEPTH_READ;
         break;
-    case RenderTextureState::Common:
-        d3dState = D3D12_RESOURCE_STATE_COMMON;
+    case TextureState::Common:
+        outState = D3D12_RESOURCE_STATE_COMMON;
         break;
+    case TextureState::CopyDest:
+        outState = D3D12_RESOURCE_STATE_COPY_DEST;
+        break;
+    case TextureState::CopySrouce:
+        outState = D3D12_RESOURCE_STATE_COPY_SOURCE;
+        break;
+
     default:
-        break;
+        return false;
     }
 
-    return d3dState;
+    return true;
 }
 
 void RenderTexture::GetSRVDes(D3D12_SHADER_RESOURCE_VIEW_DESC& outDesc)
@@ -321,15 +394,6 @@ void RenderTexture::BindRTV(ID3D12Device* device, DescriptorHeap* descriptorHeap
     }
 }
 
-void RenderTexture::TransitionTo(ID3D12GraphicsCommandList* commandList, RenderTextureState targetState)
-{
-    if (targetState != mCurrState)
-    {
-        commandList->ResourceBarrier(1, get_rvalue_ptr(CD3DX12_RESOURCE_BARRIER::Transition(mTexture.Get(), GetD3DState(mCurrState), GetD3DState(targetState))));
-        mCurrState = targetState;
-    }
-}
-
 void RenderTexture::SetViewPort(ID3D12GraphicsCommandList* commandList, UINT mipLevel)
 {
     UINT currentWidth = mWidth >> mipLevel;
@@ -401,18 +465,107 @@ void RenderTexture::Clear(ID3D12GraphicsCommandList* commandList, UINT depthSlic
 
     if (mUsage == RenderTextureUsage::DepthBuffer)
     {
-#ifdef REVERSE_Z    
-        float zClearValue = 0.0f;
-#else
-        float zClearValue = 1.0f;
-#endif
         commandList->ClearDepthStencilView(cpuHandle,
             D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL,
-            zClearValue, 0, 0, nullptr);
+            mClearValue.DepthStencil.Depth, mClearValue.DepthStencil.Stencil, 
+            0, nullptr);
     }
     else
     {
-        float clearValue[] = { 0.0f, 0.0f, 0.0f, 0.0f };
-        commandList->ClearRenderTargetView(cpuHandle, clearValue, 0, nullptr);
+        commandList->ClearRenderTargetView(cpuHandle, mClearValue.Color, 0, nullptr);
     }
+}
+
+// ----------- UnorderAccessTexture -------------
+UnorderAccessTexture::UnorderAccessTexture(ID3D12Device* device, DescriptorHeap* descriptorHeap,
+    UINT width, UINT height,
+    DXGI_FORMAT format,
+    TextureState initState)
+{
+    mWidth = width;
+    mHeight = height;
+    mFormat = format;
+    mCurrState = initState;
+
+    D3D12_RESOURCE_DESC texDesc;
+    ZeroMemory(&texDesc, sizeof(D3D12_RESOURCE_DESC));
+    texDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+    texDesc.Alignment = 0;
+    texDesc.Width = mWidth;
+    texDesc.Height = mHeight;
+    texDesc.DepthOrArraySize = 1;
+    texDesc.MipLevels = 1;
+    texDesc.Format = mFormat;
+    texDesc.SampleDesc.Count = 1;
+    texDesc.SampleDesc.Quality = 0;
+    texDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+    texDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+
+    D3D12_RESOURCE_STATES state;
+    GetD3DState(initState, state);
+    ThrowIfFailed(device->CreateCommittedResource(
+        get_rvalue_ptr(CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT)),
+        D3D12_HEAP_FLAG_NONE,
+        &texDesc,
+        state,
+        nullptr,
+        IID_PPV_ARGS(&mTexture)));
+
+    BindUAV(device, descriptorHeap);
+    BindSRV(device, descriptorHeap);
+}
+
+void UnorderAccessTexture::BindUAV(ID3D12Device* device,
+    D3D12_CPU_DESCRIPTOR_HANDLE descriptor)
+{
+    D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc = {};
+    uavDesc.Format = mFormat;
+    uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D;
+    uavDesc.Texture2D.MipSlice = 0;
+    uavDesc.Texture2D.PlaneSlice = 0;
+
+    device->CreateUnorderedAccessView(mTexture.Get(), nullptr, &uavDesc, descriptor);
+}
+
+void UnorderAccessTexture::BindUAV(ID3D12Device* device, DescriptorHeap* descriptorHeap)
+{
+    mUavDescriptorData = descriptorHeap->GetNextnSrvDescriptor(1);
+    BindUAV(device, mUavDescriptorData.CPUHandle);
+}
+
+bool UnorderAccessTexture::GetD3DState(TextureState state, D3D12_RESOURCE_STATES& outState)
+{
+    switch (state)
+    {
+    case TextureState::Write:
+        outState = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
+        break;
+    case TextureState::Read:
+        outState = D3D12_RESOURCE_STATE_GENERIC_READ;
+        break;
+    case TextureState::Common:
+        outState = D3D12_RESOURCE_STATE_COMMON;
+        break;
+    case TextureState::CopySrouce:
+        outState = D3D12_RESOURCE_STATE_COPY_SOURCE;
+        break;
+    case TextureState::CopyDest:
+        outState = D3D12_RESOURCE_STATE_COPY_DEST;
+        break;
+    default:
+        return false;
+        break;
+    }
+    return true;
+}
+
+void UnorderAccessTexture::GetSRVDes(D3D12_SHADER_RESOURCE_VIEW_DESC& outDesc)
+{
+    outDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+    outDesc.Format = mFormat;
+    outDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+    outDesc.Texture2D.MostDetailedMip = 0;
+    outDesc.Texture2D.MipLevels = 1;
+    outDesc.Texture2D.PlaneSlice = 0;
+    outDesc.Texture2D.ResourceMinLODClamp = 0.0f;
 }

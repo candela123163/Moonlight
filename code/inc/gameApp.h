@@ -29,6 +29,8 @@ public:
 
 public:
     void SetDefaultRenderTarget();
+    D3D12_CPU_DESCRIPTOR_HANDLE CurrentBackBufferView() const;
+    D3D12_CPU_DESCRIPTOR_HANDLE DepthStencilView() const;
 
 private:
     // handle mouse & keyboard input
@@ -62,8 +64,6 @@ private:
 
     FrameResources* CurrentFrameResource() const;
     ID3D12Resource* CurrentBackBuffer() const;
-    D3D12_CPU_DESCRIPTOR_HANDLE CurrentBackBufferView() const;
-    D3D12_CPU_DESCRIPTOR_HANDLE DepthStencilView() const;
 
     void Update();
     void Draw();

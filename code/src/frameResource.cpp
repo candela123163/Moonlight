@@ -9,6 +9,7 @@ FrameResources::FrameResources(ID3D12Device* device)
         D3D12_COMMAND_LIST_TYPE_DIRECT,
         IID_PPV_ARGS(CmdListAlloc.GetAddressOf())));
 
+    ConstantRenderTargetParam = make_unique<UploadBuffer<RenderTargetParamConstant, true>>(device);
     ConstantCamera = make_unique<UploadBuffer<CameraConstant, true>>(device);
     ConstantLight = make_unique<UploadBuffer<LightConstant, true>>(device);
     ConstantShadow = make_unique<UploadBuffer<ShadowConst, true>>(device);

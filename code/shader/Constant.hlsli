@@ -134,9 +134,9 @@ cbuffer ShadowConstant : register(bx)                           \
     float ShadowConstant_pad;                                   \
 }
 
-#define DEFINE_RENDER_TARGET_SIZE_CONSTANT(bx)                  \
-cbuffer RenderTargetSizeConstant : register(bx)                 \
+#define DEFINE_RENDER_TARGET_PARAM_CONSTANT(bx)                  \
+cbuffer RenderTargetParamConstant : register(bx)                 \
 {                                                               \
-    float2 _RenderTargetSize;                                   \
+    float4 _RenderTargetSize;                                   \
 }                               
 #endif

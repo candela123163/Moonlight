@@ -42,7 +42,7 @@ Light GetPointLight(uint index, Surface surface)
     light.attenuation = rangeAttenuation;
     
     [branch]
-    if (light.attenuation.r > 0.01f)
+    if (light.attenuation > 0.01f)
     {
         light.attenuation *= GetPointShadowAttenuation(surface, index);
     }
@@ -80,7 +80,7 @@ Light GetSpotLight(uint index, Surface surface)
     light.attenuation = rangeAttenuation * spotAttenuation;
     
     [branch]
-    if (light.attenuation.r > 0.01f)
+    if (light.attenuation > 0.01f)
     {
         light.attenuation *= GetSpotShadowAttenuation(surface, index);
     }

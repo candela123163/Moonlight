@@ -132,6 +132,11 @@ struct ShadowConst
     float pad;
 };
 
+struct RenderTargetParamConstant
+{
+    DirectX::XMFLOAT4 RenderTargetSize;
+};
+
 struct PassData
 {
     virtual ~PassData() {}
@@ -151,6 +156,7 @@ struct FrameResources
 
     UINT64 Fence = 0;
 
+    std::unique_ptr<UploadBuffer<RenderTargetParamConstant, true>> ConstantRenderTargetParam;
     std::unique_ptr<UploadBuffer<CameraConstant, true>> ConstantCamera;
     std::unique_ptr<UploadBuffer<LightConstant, true>> ConstantLight;
     std::unique_ptr<UploadBuffer<ShadowConst, true>> ConstantShadow;
