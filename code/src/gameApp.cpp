@@ -2,13 +2,14 @@
 #include <WindowsX.h>
 #include "gameApp.h"
 #include "util.h"
+#include "texture.h"
 #include "passBase.h"
 #include "debugPass.h"
 #include "skyBoxPass.h"
 #include "opaqueLitPass.h"
 #include "IBLPreprocessPass.h"
 #include "shadowPass.h"
-#include "HBAOPass.h"
+#include "SSAOPass.h"
 using namespace DirectX;
 using namespace std;
 
@@ -99,12 +100,21 @@ bool GameApp::Initialize()
 	return true;
 }
 
-void GameApp::SetDefaultRenderTarget()
+void GameApp::SetDefaultRenderTarget(bool writeColor , bool writeDepth )
 {
+	if (!writeColor && !writeDepth) {
+		return;
+	}
+
 	mCommandList->RSSetViewports(1, &mScreenViewport);
 	mCommandList->RSSetScissorRects(1, &mScissorRect);
 
-	mCommandList->OMSetRenderTargets(1, get_rvalue_ptr(CurrentBackBufferView()), true, get_rvalue_ptr(DepthStencilView()));
+	UINT numRtv = writeColor ? 1 : 0;
+	D3D12_CPU_DESCRIPTOR_HANDLE* rtvs = writeColor ? get_rvalue_ptr(CurrentBackBufferView()) : nullptr;
+	D3D12_CPU_DESCRIPTOR_HANDLE* dsv = writeDepth ? get_rvalue_ptr(DepthStencilView()) : nullptr;
+
+	mDepthStencilTarget->TransitionTo(mCommandList.Get(), TextureState::Write);
+	mCommandList->OMSetRenderTargets(numRtv, rtvs, true, dsv);
 }
 
 LRESULT GameApp::MsgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -361,58 +371,23 @@ void GameApp::CreateDescriptorHeap()
 
 void GameApp::CreateDefaultRtvDsv()
 {
-	auto descriptorData = mDescriptorHeap->GetNextnRtvDescriptor(mSwapChainBufferCount);
-	mRtvDescriptorCPUStart = descriptorData.CPUHandle;
-	mRtvDescriptorSize = descriptorData.IncrementSize;
+	mRtvDescriptorData = mDescriptorHeap->GetNextnRtvDescriptor(mSwapChainBufferCount);
+
+	CD3DX12_CPU_DESCRIPTOR_HANDLE cpuHandle = mRtvDescriptorData.CPUHandle;
+	UINT increment = mRtvDescriptorData.IncrementSize;
 
 	for (UINT i = 0; i < mSwapChainBufferCount; i++)
 	{
 		ThrowIfFailed(mSwapChain->GetBuffer(i, IID_PPV_ARGS(&mSwapChainBuffer[i])));
-		md3dDevice->CreateRenderTargetView(mSwapChainBuffer[i].Get(), nullptr, descriptorData.CPUHandle);
-		descriptorData.CPUHandle.Offset(1, mRtvDescriptorSize);
+		md3dDevice->CreateRenderTargetView(mSwapChainBuffer[i].Get(), nullptr, cpuHandle);
+		cpuHandle.Offset(1, increment);
 	}
 
-	// Create the depth/stencil buffer and view.
-	D3D12_RESOURCE_DESC depthStencilDesc;
-	depthStencilDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
-	depthStencilDesc.Alignment = 0;
-	depthStencilDesc.Width = mClientWidth;
-	depthStencilDesc.Height = mClientHeight;
-	depthStencilDesc.DepthOrArraySize = 1;
-	depthStencilDesc.MipLevels = 1;
-	depthStencilDesc.Format = DXGI_FORMAT_R24G8_TYPELESS;
-	depthStencilDesc.SampleDesc.Count =  1;
-	depthStencilDesc.SampleDesc.Quality = 0;
-	depthStencilDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
-	depthStencilDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
-
-	D3D12_CLEAR_VALUE optClear;
-	optClear.Format = mDepthStencilFormat;
-#ifdef REVERSE_Z
-	optClear.DepthStencil.Depth = 0.0f;
-#else
-	optClear.DepthStencil.Depth = 1.0f;
-#endif
-	optClear.DepthStencil.Stencil = 0;
-	ThrowIfFailed(md3dDevice->CreateCommittedResource(
-		get_rvalue_ptr(CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT)),
-		D3D12_HEAP_FLAG_NONE,
-		&depthStencilDesc,
-		D3D12_RESOURCE_STATE_DEPTH_WRITE,
-		&optClear,
-		IID_PPV_ARGS(mDepthStencilBuffer.GetAddressOf())));
-
-	// Create descriptor to mip level 0 of entire resource using the format of the resource.
-	descriptorData = mDescriptorHeap->GetNextnDsvDescriptor(1);
-	mDsvDescriptorCPUStart = descriptorData.CPUHandle;
-	mDsvDescriptorSize = descriptorData.IncrementSize;
-
-	D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc;
-	dsvDesc.Flags = D3D12_DSV_FLAG_NONE;
-	dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
-	dsvDesc.Format = mDepthStencilFormat;
-	dsvDesc.Texture2D.MipSlice = 0;
-	md3dDevice->CreateDepthStencilView(mDepthStencilBuffer.Get(), &dsvDesc, mDsvDescriptorCPUStart);
+	mDepthStencilTarget = make_unique<RenderTexture>(
+		md3dDevice.Get(), mDescriptorHeap.get(),
+		mClientWidth, mClientHeight, 1, 1, TextureDimension::Tex2D,
+		RenderTextureUsage::DepthBuffer, mDepthStencilFormat,
+		TextureState::Write);
 }
 
 void GameApp::SetFullWindowViewPort()
@@ -456,10 +431,10 @@ void GameApp::PreparePasses()
 	// load pass
 	mPasses.push_back(make_unique<IBLPreprocessPass>());
 	mPasses.push_back(make_unique<ShadowPass>());
-	//mPasses.push_back(make_unique<HBAOPass>());
+	mPasses.push_back(make_unique<SSAOPass>());
 	mPasses.push_back(make_unique<OpaqueLitPass>());
 	mPasses.push_back(make_unique<SkyboxPass>());
-	//mPasses.push_back(make_unique<DebugPass>());
+	mPasses.push_back(make_unique<DebugPass>());
 
 	for (auto& pass : mPasses) {
 		pass->PreparePass(mGraphicContext);
@@ -510,16 +485,23 @@ ID3D12Resource* GameApp::CurrentBackBuffer() const
 D3D12_CPU_DESCRIPTOR_HANDLE GameApp::CurrentBackBufferView() const
 {
 	return CD3DX12_CPU_DESCRIPTOR_HANDLE(
-		mRtvDescriptorCPUStart,
+		mRtvDescriptorData.CPUHandle,
 		mCurrBackBufferIndex,
-		mRtvDescriptorSize
+		mRtvDescriptorData.IncrementSize
 	);
 }
 
+
 D3D12_CPU_DESCRIPTOR_HANDLE GameApp::DepthStencilView() const
 {
-	return mDsvDescriptorCPUStart;
+	return mDepthStencilTarget->GetRtvDescriptorData().CPUHandle;
 }
+
+RenderTexture* GameApp::GetDepthStencilTarget() const
+{
+	return mDepthStencilTarget.get();
+}
+
 
 void GameApp::FlushCommandQueue()
 {
@@ -583,12 +565,8 @@ void GameApp::Draw()
 	mCommandList->ResourceBarrier(1, get_rvalue_ptr(CD3DX12_RESOURCE_BARRIER::Transition(CurrentBackBuffer(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET)));
 	mCommandList->ClearRenderTargetView(CurrentBackBufferView(), DirectX::Colors::LightSteelBlue, 0, nullptr);
 
-#ifdef REVERSE_Z
-	float zClearValue = 0.0f;
-#else
-	float zClearValue = 1.0f;
-#endif
-	mCommandList->ClearDepthStencilView(DepthStencilView(), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, zClearValue, 0, 0, nullptr);
+	mDepthStencilTarget->Clear(mCommandList.Get(), 0, 0);
+	mDepthStencilTarget->TransitionTo(mCommandList.Get(), TextureState::Write);
 
 	DrawPasses();
 

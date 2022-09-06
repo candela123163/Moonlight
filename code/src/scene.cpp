@@ -409,7 +409,6 @@ void Scene::UpdateLightConstant(const GraphicContext& context)
             light->Direction,
             -outterCos * invAngleRange,
             light->Intensity,
-            XMFLOAT3(0, 0, 0)
         };
     }
 

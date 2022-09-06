@@ -9,16 +9,11 @@
 #define FILTER_SAMPLER_SIZE 9
 #define FILTER_SETUP SampleShadow_ComputeSamples_Tent_5x5
 
-float ShadowFade(float depth, float maxDepth, float factor)
-{
-    return saturate((maxDepth / depth - 1.0f) * factor);
-}
 
 float GetShadowGlobalFade(float depth)
 {
-    return ShadowFade(depth, _ShadowMaxDistance, 2.0f);
+    return FadeOut(depth, _ShadowMaxDistance, 0.2f);
 }
-
 
 // Spot Shadow
 float GetSpotShadowAttenuation(Surface surface, uint index)
@@ -27,7 +22,7 @@ float GetSpotShadowAttenuation(Surface surface, uint index)
     SpotLight light = _SpotLights[index];
     SpotShadow shadow = _ShadowSpot[index];
     
-    if (shadow.castShadow && surface.shadowFade > 0.01f)
+    if (shadow.castShadow && surface.shadowFade > EPSILON)
     {
         float3 normalBias = surface.interpolatedNormal * shadow.shadowBias *
             dot(surface.position - light.Position, normalize(light.Direction));
@@ -49,7 +44,7 @@ float GetSpotShadowAttenuation(Surface surface, uint index)
         }
     }
     
-    return lerp(1.0f, attenuation, surface.shadowFade);
+    return lerp(0.0f, attenuation, surface.shadowFade);
 }
 
 // Point Shadow
@@ -59,7 +54,7 @@ float GetPointShadowAttenuation(Surface surface, uint index)
     PointLight light = _PointLights[index];
     PointShadow shadow = _ShadowPoint[index];
     
-    if(shadow.castShadow && surface.shadowFade > 0.01f)
+    if (shadow.castShadow && surface.shadowFade > EPSILON)
     {
         float3 lightToSurface = surface.position - light.Position;
         float3 rayDir = normalize(lightToSurface);
@@ -85,7 +80,7 @@ float GetPointShadowAttenuation(Surface surface, uint index)
         
     }
     
-    return lerp(1.0f, attenuation, surface.shadowFade);
+    return lerp(0.0f, attenuation, surface.shadowFade);
 }
 
 // Directional Shadow
@@ -119,7 +114,7 @@ void GetSunShadowCascade(float depth, out uint cascadeIndex, out float cascadeSt
         float bound = _ShadowCascade[cascadeIndex].cascadeDistance;
         if (depth < bound)
         {
-            cascadeStrength = ShadowFade(depth, bound, 10.0f);
+            cascadeStrength = FadeOut(depth, bound, 0.1f);
             break;
         }
     }
@@ -130,7 +125,7 @@ float GetSunShadowAttenuation(Surface surface)
     float attenuation = 1.0f;
     float shadowStrength = surface.shadowFade;
     
-    if (_SunCastShadow == 1 && surface.shadowFade > 0.01f)
+    if (_SunCastShadow == 1 && surface.shadowFade > EPSILON)
     {
         uint cascadeIndex;
         float cascadeStrength;
@@ -162,7 +157,7 @@ float GetSunShadowAttenuation(Surface surface)
 
     }
     
-    return lerp(1.0f, attenuation, shadowStrength);
+    return lerp(0.0f, attenuation, shadowStrength);
     
 }
 #endif

@@ -11,6 +11,7 @@
 #define INV_FOUR_PI   0.07957747155
 #define HALF_PI       1.57079632679
 #define INV_HALF_PI   0.636619772367
+#define EPSILON       0.01
 // ==========================================================================
 
 // =============================== misc =====================================
@@ -18,19 +19,42 @@ float Square(float x)
 {
     return x * x;
 }
+
+float2 NDCXYToUV(float2 xy)
+{
+    float2 uv = xy * float2(0.5f, -0.5f) + float2(0.5f, 0.5f);
+    return uv;
+}
+
+float FadeOut(float x, float upperBound, float fadeRange)
+{
+    fadeRange = saturate(fadeRange);
+    return saturate((1.0f - x / upperBound) / fadeRange);
+}
 // ==========================================================================
 
 
 // =========================== space transform ==============================
 float3 NormalTangentToWorld(float3 normalTS, float3 T, float3 B, float3 N)
 {
-    return normalize(mul(normalTS, float3x3(T, B, N)));
+    return mul(normalTS, float3x3(T, B, N));
 }
 
+/*
+       Z
+       |
+       |
+       |
+       O--------X
+      /
+     /
+    /
+   Y
+*/
 float3 NormalTangentToWorld(float3 normalTs, float3 N)
 {
-    float3 forward = abs(N.z) < 0.999f ? float3(0.0f, 0.0f, 1.0f) : float3(1.0f, 0.0f, 0.0f);
-    float3 T = normalize(cross(forward, N));
+    float3 up = abs(N.z) < 1.0f ? float3(0.0f, 0.0f, 1.0f) : float3(1.0f, 0.0f, 0.0f);
+    float3 T = normalize(cross(up, N));
     float3 B = cross(N, T);
     return NormalTangentToWorld(normalTs, T, B, N);
 }
@@ -48,8 +72,15 @@ float NDCDepthToViewDepth(float ndcDepth, float near, float far)
 float4 NDCToViewPosition(float2 screenCoord, float ndcDepth, float near, float far, float4x4 invProject)
 {
     float viewDepth = NDCDepthToViewDepth(ndcDepth, near, far);
+    screenCoord.xy = screenCoord.xy * 2.0f - 1.0f;
+    screenCoord.y = -screenCoord.y;
     float4 posH = float4(screenCoord, ndcDepth, 1.0f) * viewDepth;
     return mul(posH, invProject);
+}
+
+float NDCDepthToLinear01Depth(float ndcDepth, float near, float far)
+{
+    return NDCDepthToViewDepth(ndcDepth, near, far) / far;
 }
 // ==========================================================================
 
@@ -153,6 +184,52 @@ float2 Hammersley(uint i, uint N)
     return float2(float(i) / float(N), _RadicalInverse_VdC(i));
 }
 
+float _PRNG(float2 seed)
+{
+    return frac(sin(dot(seed, float2(12.9898, 78.233))) * 43758.5453);
+}
+
+static float _rand_last = 0.0f;
+static float2 _uv = 0.0f;
+
+void RandInit(float2 uv)
+{
+    _uv = uv;
+}
+
+float RandGetNext1()
+{
+    _rand_last = _PRNG(_uv + float2(_rand_last, 2.0f * _rand_last));
+    return _rand_last;
+}
+
+float2 RandGetNext2()
+{
+    float2 rand;
+    rand.x = RandGetNext1();
+    rand.y = RandGetNext1();
+    return rand;
+}
+
+float3 RandGetNext3()
+{
+    float3 rand;
+    rand.x = RandGetNext1();
+    rand.y = RandGetNext1();
+    rand.z = RandGetNext1();
+    return rand;
+}
+
+float4 RandGetNext4()
+{
+    float4 rand;
+    rand.x = RandGetNext1();
+    rand.y = RandGetNext1();
+    rand.z = RandGetNext1();
+    rand.w = RandGetNext1();
+    return rand;
+}
+
 float2 SampleUniformInDisk(float2 Xi)
 {
     float theta = TWO_PI * Xi.y;
@@ -189,13 +266,45 @@ float3 SampleUniformOnSphere(float2 Xi)
     return float3(x, y, z);
 }
 
+float3 SampleUniformOnHemiSphere(float2 Xi)
+{
+    float z = Xi.x;
+    float sinTheta = sqrt(1.0f - Xi.x * Xi.x);
+    float phi = TWO_PI * Xi.y;
+    
+    float x = cos(phi) * sinTheta;
+    float y = sin(phi) * sinTheta;
+    
+    return float3(x, y, z);
+}
+
+float3 SampleUniformInsideHemiSphere(float3 Xi)
+{
+    float3 v = SampleUniformOnHemiSphere(Xi.xy);
+    float r = pow(Xi.z, 1.0f / 3.0f);
+    return r * v;
+}
+
 float3 SampleCosOnHemiSphere(float2 Xi)
 {
     float2 pInDisk = SampleUniformInDisk(Xi);
     float z = sqrt(max(0.0f, 1.0f - Square(pInDisk.x) - Square(pInDisk.y)));
     return float3(pInDisk, z);
 }
+
+float3 SampleCosInsideHemiSphere(float3 Xi)
+{
+    float3 v = SampleCosOnHemiSphere(Xi.xy);
+    float r = pow(Xi.z, 1.0f / 3.0f);
+    return r * v;
+}
 // ==========================================================================
 
+// ================================== Filter ================================
+float GaussianFilter(float difference, float sigma)
+{
+    return exp(-difference / (2.0f * sigma * sigma));
+}
 
+// ==========================================================================
 #endif

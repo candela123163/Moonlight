@@ -26,7 +26,6 @@ cbuffer MaterialConstant : register(bx)     \
     int _AlbedoMapIndex;                    \
     int _NormalMapIndex;                    \
     int _MetalRoughMapIndex;                \
-    int MaterialConstant_Pad;               \
 }
 
 #define DEFINE_CAMERA_CONSTANT(bx)          \
@@ -63,7 +62,7 @@ struct SpotLight
     float AttenuationFactorB;
     
     float Intensity;
-    float3 pad;
+    float3 _pad;
 };
 
 #define DEFINE_LIGHT_CONSTANT(bx)                           \
@@ -75,11 +74,10 @@ cbuffer LightConstant : register(bx)                        \
     float3 _SunDirection;                                   \
     int _SpotLightCount;                                    \
                                                             \
-    float _SunIntensity;                                    \
-    float3 LightConstant_pad;                               \
-                                                            \
     PointLight _PointLights[POINT_LIGHT_MAX_COUNT];         \
     SpotLight _SpotLights[SPOT_LIGHT_MAX_COUNT];            \
+                                                            \
+    float _SunIntensity;                                    \
 }
 
 #define DEFINE_SHADOW_CASTER_CONSTANT(bx)                   \
@@ -90,7 +88,6 @@ cbuffer ShadowCasterConstant : register(bx)                 \
     float _LightInvRange;                                   \
                                                             \
     float _NearZ;                                           \
-    float3 ShadowCasterConstant_pad;                        \
 }
 
 struct CascadeShadow
@@ -100,7 +97,7 @@ struct CascadeShadow
     uint shadowMapIndex;
     float cascadeDistance;
     float shadowBias;
-    float pad;
+    float _pad;
 };
 
 struct PointShadow
@@ -108,7 +105,7 @@ struct PointShadow
     int shadowMapIndex;
     float shadowBias;
     int castShadow;
-    float pad;
+    float _pad;
 };
 
 struct SpotShadow
@@ -118,7 +115,7 @@ struct SpotShadow
     int shadowMapIndex;
     float shadowBias;
     int castShadow;
-    float pad;
+    float _pad;
 };
 
 #define DEFINE_SHADOW_CONSTANT(bx)                              \
@@ -131,12 +128,12 @@ cbuffer ShadowConstant : register(bx)                           \
     float _ShadowMaxDistance;                                   \
     int _CascadeCount;                                        \
     int _SunCastShadow;                                         \
-    float ShadowConstant_pad;                                   \
 }
 
 #define DEFINE_RENDER_TARGET_PARAM_CONSTANT(bx)                  \
 cbuffer RenderTargetParamConstant : register(bx)                 \
 {                                                               \
     float4 _RenderTargetSize;                                   \
-}                               
+}     
+
 #endif

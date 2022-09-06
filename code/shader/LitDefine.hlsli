@@ -13,6 +13,7 @@ struct Surface
     float metallic;
     float roughness;
     float shadowFade;
+    float2 screenUV;
 };
 
 struct Light

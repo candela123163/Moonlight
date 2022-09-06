@@ -40,6 +40,9 @@ namespace Globals
     // dummy texture
     #define DUMMY_TEXTURE "white.png"
 
+    // compute shader
+    #define COMPUTE_THREAD_GROUP 256
+
     // static samplers
     extern const std::array<const CD3DX12_STATIC_SAMPLER_DESC, 8> StaticSamplers;
 

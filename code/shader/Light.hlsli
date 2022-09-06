@@ -12,6 +12,7 @@ Light GetSun(Surface surface)
     light.color = _SunColor;
     light.intensity = _SunIntensity;
     light.direction = -normalize(_SunDirection);
+    light.attenuation = 1.0f;
     light.attenuation = GetSunShadowAttenuation(surface);
     
     return light;
@@ -31,7 +32,7 @@ Light GetPointLight(uint index, Surface surface)
     light.intensity = pointLight.Intensity;
     float3 ray = pointLight.Position - surface.position;
     light.direction = normalize(ray);
-    float squareDistance = max(0.0001f, dot(ray, ray));
+    float squareDistance = max(EPSILON, dot(ray, ray));
     float rangeAttenuation = 
     Square(
         saturate(
@@ -42,7 +43,7 @@ Light GetPointLight(uint index, Surface surface)
     light.attenuation = rangeAttenuation;
     
     [branch]
-    if (light.attenuation > 0.01f)
+    if (light.attenuation > EPSILON)
     {
         light.attenuation *= GetPointShadowAttenuation(surface, index);
     }
@@ -64,7 +65,7 @@ Light GetSpotLight(uint index, Surface surface)
     light.intensity = spotLight.Intensity;
     float3 ray = spotLight.Position - surface.position;
     light.direction = normalize(ray);
-    float squareDistance = max(0.0001f, dot(ray, ray));
+    float squareDistance = max(EPSILON, dot(ray, ray));
     float rangeAttenuation = 
         Square(
             saturate(
@@ -80,7 +81,7 @@ Light GetSpotLight(uint index, Surface surface)
     light.attenuation = rangeAttenuation * spotAttenuation;
     
     [branch]
-    if (light.attenuation > 0.01f)
+    if (light.attenuation > EPSILON)
     {
         light.attenuation *= GetSpotShadowAttenuation(surface, index);
     }

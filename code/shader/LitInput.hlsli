@@ -7,7 +7,6 @@
 
 
 // --------- textures ---------------------------------------------
-#define TEXTURE_ARRAY_SIZE 128
 Texture2D _2DMaps[] : register(t0, space0);
 TextureCube _CubeMaps[] : register(t0, space1);
 // ----------------------------------------------------------------
@@ -26,10 +25,12 @@ cbuffer IBLConstant : register(b4)
     int _PrefilterMapIndex;
     int _BRDFLUTIndex;
     int _PrefilterMapMipCount;
+    
+    int _SSAOMapIndex;
 }
 
 DEFINE_SHADOW_CONSTANT(b5)
-
+DEFINE_RENDER_TARGET_PARAM_CONSTANT(b6)
 // ---------------------------------------------------------------
 
 
@@ -126,6 +127,11 @@ float4 GetSunCascadeShadowMapSize(uint cascade)
     float w, h;
     _2DMaps[NonUniformResourceIndex(mapIndex)].GetDimensions(w, h);
     return float4(1.0f / w, 1.0f / h, w, h);
+}
+
+float GetAO(float2 uv)
+{
+    return saturate(_2DMaps[_SSAOMapIndex].SampleLevel(_SamplerLinearClamp, uv, 0).r);
 }
 // ---------------------------------------------------------------
 #endif

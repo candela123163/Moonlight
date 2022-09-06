@@ -5,6 +5,7 @@ struct PostProc_VSOut
 {
     float4 pos : SV_Position;
     float2 uv : TEXCOORD0;
+    float3 ray : VAR_RAY;
 };
 
 //----------------------------------------------------------------------------------
@@ -19,6 +20,21 @@ PostProc_VSOut FullScreenTriangle_VS(uint VertexId : SV_VertexID)
 #ifdef REVERSE_Z
     output.pos.z = 1.0f;
 #endif
+    
+#ifdef INV_PROJECT
+    // Transform quad corners to view space near plane.
+	// Point(view) * Matrix(project) = Point(homogenous)
+	// Point(NDC) = Point(homogenous) / Point(homogenous).w
+	// Point(view) = Point(homogenous) * Matrix(inv_project)
+	//			   = Point(NDC) * Matrix(inv_project) * Point(homogenous).w
+	// ph = Point(view) / Point(homogenous).w = Point(NDC) * Matrix(inv_project)
+	// ph.w = 1 / Point(homogenous).w
+	// Point(view) = ph * Point(homogenous).w = ph / ph.w
+
+    float4 ph = mul(output.pos, INV_PROJECT);
+    output.ray = ph.xyz / ph.w;
+#endif
+    
     return output;
 }
 

@@ -319,7 +319,6 @@ void ShadowPass::DrawSpotLightShadow(const GraphicContext& context)
             static_cast<int>(spotLight->ShadowMap->GetSrvDescriptorData().HeapIndex),
             CalcPerspectiveShadowBias(spotLight->ShadowBias, spotLight->OutterAngle, spotLight->ShadowMap->GetWidth()),
             spotLight->castShadow,
-            0
         };
 
         if (!spotLight->castShadow)
@@ -369,8 +368,7 @@ void ShadowPass::DrawPointLightShadow(const GraphicContext& context)
         mShadowConstant.ShadowPoint[i] = {
             static_cast<int>(pointLight->ShadowMap->GetSrvDescriptorData().HeapIndex),
             CalcPerspectiveShadowBias(pointLight->ShadowBias, M_PI_2, pointLight->ShadowMap->GetWidth()),
-            pointLight->castShadow,
-            0
+            pointLight->castShadow
         };
 
         if (!pointLight->castShadow) {

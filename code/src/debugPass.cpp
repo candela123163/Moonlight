@@ -73,16 +73,14 @@ void DebugPass::PreparePass(const GraphicContext& context)
     basePsoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
     basePsoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
     basePsoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
-#ifdef REVERSE_Z
-    basePsoDesc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_GREATER;
-#endif
+    basePsoDesc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_ALWAYS;
     basePsoDesc.SampleMask = UINT_MAX;
     basePsoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
     basePsoDesc.NumRenderTargets = 1;
     basePsoDesc.RTVFormats[0] = context.backBufferFormat;
     basePsoDesc.SampleDesc.Count = 1;
     basePsoDesc.SampleDesc.Quality = 0;
-    basePsoDesc.DSVFormat = context.depthStencilFormat;
+    basePsoDesc.DSVFormat = DXGI_FORMAT_UNKNOWN;
 
     ThrowIfFailed(context.device->CreateGraphicsPipelineState(&basePsoDesc, IID_PPV_ARGS(mPSO.GetAddressOf())));
 
@@ -99,7 +97,7 @@ void DebugPass::PreparePass(const GraphicContext& context)
 
 void DebugPass::DrawPass(const GraphicContext& context)
 {
-    GameApp::GetApp()->SetDefaultRenderTarget();
+    GameApp::GetApp()->SetDefaultRenderTarget(true, false);
     context.commandList->RSSetViewports(1, &mScreenViewport);
     context.commandList->RSSetScissorRects(1, &mScissorRect);
 

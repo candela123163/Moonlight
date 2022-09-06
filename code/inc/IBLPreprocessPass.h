@@ -25,7 +25,7 @@ private:
         COUNT = 3
     };
 
-    struct IBLPreprocessConstant
+    CBUFFER IBLPreprocessConstant
     {
         DirectX::XMFLOAT4X4 ViewProj;
     };

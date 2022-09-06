@@ -3,12 +3,13 @@
 #include "LitInput.hlsli"
 #include "LitDefine.hlsli"
 
-EnvLight GetEnvLight(float3 v, float3 n, float roughness)
+EnvLight GetEnvLight(Surface surface)
 {
-    float3 L = reflect(-v, n);
+    float ao = GetAO(surface.screenUV);
+    float3 L = reflect(-surface.viewDir, surface.normal);
     EnvLight envLight;
-    envLight.irradiance = GetEnvIrradiance(n);
-    envLight.prefilteredColor = GetEnvPrefilteredColor(L, roughness);
+    envLight.irradiance = GetEnvIrradiance(surface.normal) * ao;
+    envLight.prefilteredColor = GetEnvPrefilteredColor(L, surface.roughness) * ao;  
     
     return envLight;
 }

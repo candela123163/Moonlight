@@ -3,14 +3,14 @@
 #include "util.h"
 #include "globals.h"
 
-struct ObjectConstant
+CBUFFER ObjectConstant
 {
     DirectX::XMFLOAT4X4 World;
     DirectX::XMFLOAT4X4 InverseTransposedWorld;
 };
 
 
-struct MaterialConstant
+CBUFFER MaterialConstant
 {
     DirectX::XMFLOAT4 AlbedoFactor;
     
@@ -22,11 +22,10 @@ struct MaterialConstant
     int AlbedoMapIndex;
     int NormalMapIndex;
     int MetalRoughMapIndex;
-    int pad;
 };
 
 
-struct CameraConstant
+CBUFFER CameraConstant
 {
     DirectX::XMFLOAT4X4 View;
     DirectX::XMFLOAT4X4 InvView;
@@ -40,10 +39,10 @@ struct CameraConstant
 };
 
 
-struct LightConstant
+CBUFFER LightConstant
 {
     // Point
-    struct PointLight
+    CBUFFER PointLight
     {
         DirectX::XMFLOAT3 Color;
         float Intensity;
@@ -52,7 +51,7 @@ struct LightConstant
         float InvRange;
     };
 
-    struct SpotLight
+    CBUFFER SpotLight
     {
         DirectX::XMFLOAT3 Color;
         float InvRange;
@@ -64,7 +63,6 @@ struct LightConstant
         float AttenuationFactorB;
 
         float Intensity;
-        DirectX::XMFLOAT3 pad;
     };
 
     DirectX::XMFLOAT3 SunColor;
@@ -73,15 +71,14 @@ struct LightConstant
     DirectX::XMFLOAT3 SunDirection;
     int SpotLightCount;
 
-    float SunIntensity;
-    DirectX::XMFLOAT3 pad;
-
     PointLight PointLights[MAX_POINT_LIGHT_COUNT];
     SpotLight SpotLights[MAX_SPOT_LIGHT_COUNT];
+
+    float SunIntensity;
 };
 
 
-struct ShadowCasterConstant
+CBUFFER ShadowCasterConstant
 {
     DirectX::XMFLOAT4X4 LightViewProject;
     // for point & spot light w is 1 / range
@@ -89,37 +86,33 @@ struct ShadowCasterConstant
     float LightInvRange;
 
     float NearZ;
-    DirectX::XMFLOAT3 pad;
 };
 
-struct ShadowConst
+CBUFFER ShadowConst
 {
-    struct CascadeShadow
+    CBUFFER CascadeShadow
     {
         DirectX::XMFLOAT4X4 shadowTransform;
         
         int shadowMapIndex;
         float cascadeDistance;
         float shadowBias;
-        float pad;
     };
 
-    struct PointShadow
+    CBUFFER PointShadow
     {
         int shadowMapIndex;
         float shadowBias;
         int castShadow;
-        float pad;
     };
 
-    struct SpotShadow
+    CBUFFER SpotShadow
     {
         DirectX::XMFLOAT4X4 shadowTransform;
 
         int shadowMapIndex;
         float shadowBias;
         int castShadow;
-        float pad;
     };
 
     CascadeShadow ShadowCascade[MAX_CASCADE_COUNT];
@@ -129,10 +122,9 @@ struct ShadowConst
     float ShadowMaxDistance;
     int cascadeCount;
     int sunCastShadow;
-    float pad;
 };
 
-struct RenderTargetParamConstant
+CBUFFER RenderTargetParamConstant
 {
     DirectX::XMFLOAT4 RenderTargetSize;
 };

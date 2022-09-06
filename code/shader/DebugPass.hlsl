@@ -15,9 +15,9 @@ cbuffer MapIndicesConstant : register(b1)
     uint m9;
 }
 
-#define TEXTURE_ARRAY_SIZE 128
-Texture2D _2DMaps[TEXTURE_ARRAY_SIZE] : register(t0, space0);
-TextureCube _CubeMaps[TEXTURE_ARRAY_SIZE] : register(t0, space1);
+
+Texture2D _2DMaps[] : register(t0, space0);
+TextureCube _CubeMaps[] : register(t0, space1);
 
 
 #define FullScreenTriangle_VS vs
@@ -32,26 +32,31 @@ float4 ps(PostProc_VSOut pin) : SV_TARGET
     {
         uv *= 2.0f;
         texIndex = m0;
+        return float4(_2DMaps[9].Sample(_SamplerLinearClamp, uv).rrr, 1.0f);
     }
     else if(uv.x <= 1.0f && uv.y <= 0.5f)
     {
         uv.x = uv.x * 2.0f - 1.0f;
         uv.y *= 2.0f;
-        texIndex = m1;
+        texIndex = 0;
+        return float4(_2DMaps[0].Sample(_SamplerLinearClamp, uv).rrr, 1.0f);
     }
     else if(uv.x <= 0.5f && uv.y <= 1.0f)
     {
         uv.x *= 2.0f;
         uv.y = uv.y * 2.0f - 1.0f;
-        texIndex = m2;
+        texIndex = 4;
+        return float4(_2DMaps[4].SampleLevel(_SamplerPointClamp, uv, 0).rgb, 1.0f);
+
     }
     else
     {
         uv.x = uv.x * 2.0f - 1.0f;
         uv.y = uv.y * 2.0f - 1.0f;
-        texIndex = 3;    
+        texIndex = 5;    
+        return float4(_2DMaps[5].SampleLevel(_SamplerPointClamp, uv, 0).rgb, 1.0f);
+
     }
     
-    return _2DMaps[texIndex].Sample(_SamplerLinearClamp, uv);
     
 }

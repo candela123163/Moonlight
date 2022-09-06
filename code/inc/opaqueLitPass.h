@@ -5,6 +5,7 @@
 using Microsoft::WRL::ComPtr;
 
 class Texture;
+class RenderTargetParamConstant;
 
 class OpaqueLitPass final : public PassBase
 {
@@ -15,12 +16,14 @@ public:
     virtual void ReleasePass(const GraphicContext& context) override;
 
 private:
-    struct IBLConstant 
+    CBUFFER IBLConstant
     {
         int IrradianceMapIndex;
         int PrefilterMapIndex;
         int BRDFLUTIndex;
         int PrefilterMapMipCount;
+
+        int SSAOMapIndex;
     };
 
     enum class RootSignatureParam
@@ -31,12 +34,13 @@ private:
         LightConstant = 3,
         IBLConstant = 4,
         ShadowConstant = 5,
+        RenderTargetConstant = 6,
 
-        Texture2DTable = 6,
-        TextureCubeTable = 7,
+        Texture2DTable = 7,
+        TextureCubeTable = 8,
         
 
-        COUNT = 8
+        COUNT = 9
     };
 
 private:
@@ -44,5 +48,7 @@ private:
     ComPtr<ID3D12PipelineState> mPSO = nullptr;
 
     std::unique_ptr<UploadBuffer<IBLConstant, true>> mIBLConstant;
+    std::unique_ptr<UploadBuffer<RenderTargetParamConstant, true>> mRTConstant;
+
     Texture* mBRDFLUT;
 };

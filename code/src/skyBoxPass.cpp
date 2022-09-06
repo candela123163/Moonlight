@@ -98,8 +98,7 @@ void SkyboxPass::DrawPass(const GraphicContext& context)
 
     context.commandList->SetGraphicsRootConstantBufferView((int)RootSignatureParam::CameraConstant, context.frameResource->ConstantCamera->GetElementGPUAddress());
     context.commandList->SetGraphicsRootDescriptorTable((int)RootSignatureParam::Texture2DTable, skyBox.texture->GetSrvDescriptorData().GPUHandle);
-    
- 
+
     skyBox.mesh->Draw(context.commandList);
 }
 

@@ -15,7 +15,7 @@ float3 Shading(Surface surface, Light light)
     float3 energy = IncomingLight(surface, light);
     
     [branch]
-    if (dot(energy, 1.0f) > 0.01f)
+    if (dot(energy, 1.0f) > EPSILON)
     {
         BRDF brdf = DirectBRDF(surface, light.direction);
         energy *= (brdf.diffuse + brdf.specular);
@@ -26,7 +26,7 @@ float3 Shading(Surface surface, Light light)
 
 float3 EnvShading(Surface surface)
 {
-    EnvLight envLight = GetEnvLight(surface.viewDir, surface.normal, surface.roughness);
+    EnvLight envLight = GetEnvLight(surface);
     BRDF indirectBRDF = IndirectBRDF(surface);
     return indirectBRDF.diffuse * envLight.irradiance + indirectBRDF.specular * envLight.prefilteredColor;
 }

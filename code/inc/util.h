@@ -142,3 +142,5 @@ bool Intersects(
     boungdingVolume1.Transform(localVolume, L1toL2);
     return localVolume.Intersects(boungdingVolume2);
 }
+
+#define CBUFFER struct alignas(16)

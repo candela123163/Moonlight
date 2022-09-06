@@ -7,6 +7,7 @@
 using Microsoft::WRL::ComPtr;
 
 class PassBase;
+class RenderTexture;
 
 class GameApp
 {
@@ -28,9 +29,11 @@ public:
     LRESULT MsgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 public:
-    void SetDefaultRenderTarget();
+    void SetDefaultRenderTarget(bool writeColor = true, bool writeDepth = true);
     D3D12_CPU_DESCRIPTOR_HANDLE CurrentBackBufferView() const;
     D3D12_CPU_DESCRIPTOR_HANDLE DepthStencilView() const;
+
+    RenderTexture* GetDepthStencilTarget() const;
 
 private:
     // handle mouse & keyboard input
@@ -94,8 +97,11 @@ private:
     int mCurrBackBufferIndex = 0;
     ComPtr<ID3D12Resource> mSwapChainBuffer[mSwapChainBufferCount];
     ComPtr<ID3D12Resource> mDepthStencilBuffer;
-    CD3DX12_CPU_DESCRIPTOR_HANDLE mRtvDescriptorCPUStart, mDsvDescriptorCPUStart;
-    UINT mRtvDescriptorSize = 0, mDsvDescriptorSize = 0;
+
+    DescriptorData mRtvDescriptorData; 
+
+    std::unique_ptr<RenderTexture> mDepthStencilTarget;
+
 
     D3D12_VIEWPORT mScreenViewport;
     D3D12_RECT mScissorRect;

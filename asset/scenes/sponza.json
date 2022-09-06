@@ -2,7 +2,7 @@
     "Instances": "Sponza.gltf",
 
     "Skybox" : {
-        "Mesh": "sphere.obj",
+        "Mesh": "box.obj",
         "Cubemap" : "sunsetcube1024.dds"
     },
 
@@ -12,22 +12,22 @@
         "Far": 50.0,
         "Position": [0.0, 1.0, 0.0],
         "Target": [1.0, 0.0, 0.0],
-        "ShadowDistance": 30.0,
+        "ShadowDistance": 15.0,
         "ShadowCascade": [0.067, 0.2, 0.467, 1.0],
         "CascadeCount": 4
     },
 
     "Sun": {
-        "Direction": [-1.0, -15.0, -1.0],
+        "Direction": [-1.0, -15.0, -3.0],
         "Color": [ 0.513, 0.494, 0.462 ],
-        "Intensity":  6.0
+        "Intensity":  5.0
     },
 
     "PointLights":[
         {
             "Position": [ -6.0, 2.0, 0.5 ],
             "Color": [ 1.0, 0.0, 0.0 ],
-            "Intensity": 10.0,
+            "Intensity": 5.0,
             "Near": 0.3,
             "Range": 3.0
         },
@@ -35,7 +35,7 @@
         {
             "Position": [ 6.0, 2.0, 0.5 ],
             "Color": [ 0.0, 1.0, 0.0 ],
-            "Intensity": 10.0,
+            "Intensity": 5.0,
             "Near": 0.3,
             "Range": 3.0
         }
@@ -46,7 +46,7 @@
         {
             "Position": [ 0.0, 2.0, 0.5 ],
             "Color": [ 0.89, 0.72, 0.05 ],
-            "Intensity": 10.0,
+            "Intensity": 5.0,
             "Direction": [ 1.0, -1.0, 1.0 ],
             "Near": 0.3,
             "Range": 5.0,

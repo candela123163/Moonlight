@@ -26,6 +26,7 @@ void OpaqueLitPass::PreparePass(const GraphicContext& context)
     slotRootParameter[(int)RootSignatureParam::LightConstant].InitAsConstantBufferView(3);
     slotRootParameter[(int)RootSignatureParam::IBLConstant].InitAsConstantBufferView(4);
     slotRootParameter[(int)RootSignatureParam::ShadowConstant].InitAsConstantBufferView(5);
+    slotRootParameter[(int)RootSignatureParam::RenderTargetConstant].InitAsConstantBufferView(6);
 
     slotRootParameter[(int)RootSignatureParam::Texture2DTable].InitAsDescriptorTable(1, &tex2dTable, D3D12_SHADER_VISIBILITY_PIXEL);
     slotRootParameter[(int)RootSignatureParam::TextureCubeTable].InitAsDescriptorTable(1, &texcubeTable, D3D12_SHADER_VISIBILITY_PIXEL);
@@ -97,6 +98,8 @@ void OpaqueLitPass::PreparePass(const GraphicContext& context)
     ThrowIfFailed(context.device->CreateGraphicsPipelineState(&basePsoDesc, IID_PPV_ARGS(mPSO.GetAddressOf())));
 
     mIBLConstant = make_unique<UploadBuffer<IBLConstant, true>>(context.device);
+    mRTConstant = make_unique<UploadBuffer<RenderTargetParamConstant, true>>(context.device);
+
     mBRDFLUT = Texture::GetOrLoad(Globals::ImagePath / "IBL_BRDF_LUT.png", context);
 }
 
@@ -115,6 +118,8 @@ void OpaqueLitPass::DrawPass(const GraphicContext& context)
         mIBLConstant->GetElementGPUAddress());
     context.commandList->SetGraphicsRootConstantBufferView((int)RootSignatureParam::ShadowConstant,
         context.frameResource->ConstantShadow->GetElementGPUAddress());
+    context.commandList->SetGraphicsRootConstantBufferView((int)RootSignatureParam::RenderTargetConstant,
+        mRTConstant->GetElementGPUAddress());
     context.commandList->SetGraphicsRootDescriptorTable((int)RootSignatureParam::Texture2DTable,
         context.descriptorHeap->GetSrvHeap()->GetGPUDescriptorHandleForHeapStart());
     context.commandList->SetGraphicsRootDescriptorTable((int)RootSignatureParam::TextureCubeTable,
@@ -155,11 +160,19 @@ void OpaqueLitPass::PreprocessPass(const GraphicContext& context)
     size_t prefilterKey = hash<string>()("PrefilterMap");
     RenderTexture* prefilterMap = Globals::RenderTextureContainer.Get(prefilterKey);
 
+    size_t SSAOKey = hash<string>()("SSAO");
+    UnorderAccessTexture* ssaoMap = Globals::UATextureContainer.Get(SSAOKey);
+
     IBLConstant iblConstant;
     iblConstant.BRDFLUTIndex = mBRDFLUT->GetSrvDescriptorData().HeapIndex;
     iblConstant.IrradianceMapIndex = irradianceMap->GetSrvDescriptorData().HeapIndex;
     iblConstant.PrefilterMapIndex = prefilterMap->GetSrvDescriptorData().HeapIndex;
     iblConstant.PrefilterMapMipCount = prefilterMap->GetMipCount();
+    iblConstant.SSAOMapIndex = ssaoMap->GetSrvDescriptorData().HeapIndex;
 
     mIBLConstant->CopyData(iblConstant);
+
+    RenderTargetParamConstant renderTargetParam;
+    renderTargetParam.RenderTargetSize = XMFLOAT4(context.screenWidth, context.screenHeight, 1.0f / context.screenWidth, 1.0f / context.screenHeight);
+    mRTConstant->CopyData(renderTargetParam);
 }

@@ -266,10 +266,11 @@ void Camera::UpdateConstant(const GraphicContext& context)
 	XMMATRIX view = GetView();
 	XMMATRIX proj = GetProj();
 
+	XMVECTOR determinant;
 	XMMATRIX viewProj = XMMatrixMultiply(view, proj);
-	XMMATRIX invView = XMMatrixInverse(get_rvalue_ptr(XMMatrixDeterminant(view)), view);
-	XMMATRIX invProj = XMMatrixInverse(get_rvalue_ptr(XMMatrixDeterminant(proj)), proj);
-	XMMATRIX invViewProj = XMMatrixInverse(get_rvalue_ptr(XMMatrixDeterminant(viewProj)), viewProj);
+	XMMATRIX invView = XMMatrixInverse(&determinant, view);
+	XMMATRIX invProj = XMMatrixInverse(&determinant, proj);
+	XMMATRIX invViewProj = XMMatrixInverse(&determinant, viewProj);
 
 	XMStoreFloat4x4(&cameraConstant.View, XMMatrixTranspose(view));
 	XMStoreFloat4x4(&cameraConstant.Proj, XMMatrixTranspose(proj));

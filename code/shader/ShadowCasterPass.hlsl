@@ -5,8 +5,7 @@ DEFINE_OBJ_CONSTANT(b0)
 DEFINE_MATERIAL_CONSTANT(b1)
 DEFINE_SHADOW_CASTER_CONSTANT(b2)
 
-#define TEXTURE_ARRAY_SIZE 128
-Texture2D _2DMaps[TEXTURE_ARRAY_SIZE] : register(t0);
+Texture2D _2DMaps[] : register(t0);
 
 struct VertexIn
 {
