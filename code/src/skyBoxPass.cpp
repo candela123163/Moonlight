@@ -4,6 +4,7 @@
 #include "globals.h"
 #include "mesh.h"
 #include "gameApp.h"
+using namespace std;
 
 void SkyboxPass::PreparePass(const GraphicContext& context)
 {
@@ -84,12 +85,17 @@ void SkyboxPass::PreparePass(const GraphicContext& context)
 
 void SkyboxPass::PreprocessPass(const GraphicContext& context)
 {
-   
+    size_t rtKey = hash<string>()("OpaqueRT");
+    mRenderTarget = Globals::RenderTextureContainer.Get(rtKey);
 }
 
 void SkyboxPass::DrawPass(const GraphicContext& context)
 {
-    GameApp::GetApp()->SetDefaultRenderTarget();
+    RenderTexture* depthTarget = GameApp::GetApp()->GetDepthStencilTarget();
+    depthTarget->TransitionTo(context.commandList, TextureState::Write);
+
+    mRenderTarget->TransitionTo(context.commandList, TextureState::Write);
+    mRenderTarget->SetAsRenderTarget(context.commandList, 0, 0, *depthTarget, 0, 0);
 
     context.commandList->SetGraphicsRootSignature(mSignature.Get());
     context.commandList->SetPipelineState(mPSO.Get());

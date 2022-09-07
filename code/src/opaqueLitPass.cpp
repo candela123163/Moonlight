@@ -101,11 +101,26 @@ void OpaqueLitPass::PreparePass(const GraphicContext& context)
     mRTConstant = make_unique<UploadBuffer<RenderTargetParamConstant, true>>(context.device);
 
     mBRDFLUT = Texture::GetOrLoad(Globals::ImagePath / "IBL_BRDF_LUT.png", false, context);
+
+    size_t rtKey = hash<string>()("OpaqueRT");
+    mRenderTarget = Globals::RenderTextureContainer.Insert(
+        rtKey,
+        make_unique<RenderTexture>(
+            context.device, context.descriptorHeap,
+            context.screenWidth, context.screenHeight,
+            1, 1, TextureDimension::Tex2D,
+            RenderTextureUsage::ColorBuffer, DXGI_FORMAT_R16G16B16A16_FLOAT)
+    );
 }
 
 void OpaqueLitPass::DrawPass(const GraphicContext& context)
 {
-    GameApp::GetApp()->SetDefaultRenderTarget();
+    RenderTexture* depthTarget = GameApp::GetApp()->GetDepthStencilTarget();
+    depthTarget->TransitionTo(context.commandList, TextureState::Write);
+
+    mRenderTarget->Clear(context.commandList, 0, 0);
+    mRenderTarget->TransitionTo(context.commandList, TextureState::Write);
+    mRenderTarget->SetAsRenderTarget(context.commandList, 0, 0, *depthTarget, 0, 0);
 
     context.commandList->SetGraphicsRootSignature(mSignature.Get());
     context.commandList->SetPipelineState(mPSO.Get());

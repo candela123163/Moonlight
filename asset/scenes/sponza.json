@@ -3,7 +3,7 @@
 
     "Skybox" : {
         "Mesh": "box.obj",
-        "Cubemap" : "sunsetcube1024.dds"
+        "Cubemap" : "snowcube1024.dds"
     },
 
     "Camera":{
@@ -20,7 +20,7 @@
     "Sun": {
         "Direction": [-1.0, -15.0, -3.0],
         "Color": [ 0.513, 0.494, 0.462 ],
-        "Intensity":  5.0
+        "Intensity":  20.0
     },
 
     "PointLights":[

@@ -156,6 +156,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Use</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="code\src\globals.cpp" />
+    <ClCompile Include="code\src\outPutPass.cpp" />
     <ClCompile Include="code\src\SSAOPass.cpp" />
     <ClCompile Include="code\src\IBLPreprocessPass.cpp" />
     <ClCompile Include="code\src\main.cpp">
@@ -192,6 +193,7 @@
     <ClInclude Include="code\inc\gameApp.h" />
     <ClInclude Include="code\inc\globals.h" />
     <ClInclude Include="code\inc\graphicContext.h" />
+    <ClInclude Include="code\inc\outputPass.h" />
     <ClInclude Include="code\inc\SSAOPass.h" />
     <ClInclude Include="code\inc\IBLPreprocessPass.h" />
     <ClInclude Include="code\inc\light.h" />

@@ -75,6 +75,9 @@
     <ClCompile Include="code\src\SSAOPass.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="code\src\outPutPass.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="code\inc\gameApp.h">
@@ -144,6 +147,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="code\inc\SSAOPass.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="code\inc\outputPass.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

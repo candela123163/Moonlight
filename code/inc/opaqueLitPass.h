@@ -5,6 +5,7 @@
 using Microsoft::WRL::ComPtr;
 
 class Texture;
+class RenderTexture;
 class RenderTargetParamConstant;
 
 class OpaqueLitPass final : public PassBase
@@ -51,4 +52,6 @@ private:
     std::unique_ptr<UploadBuffer<RenderTargetParamConstant, true>> mRTConstant;
 
     Texture* mBRDFLUT;
+
+    RenderTexture* mRenderTarget;
 };

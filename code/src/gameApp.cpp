@@ -3,13 +3,13 @@
 #include "gameApp.h"
 #include "util.h"
 #include "texture.h"
-#include "passBase.h"
 #include "debugPass.h"
 #include "skyBoxPass.h"
 #include "opaqueLitPass.h"
 #include "IBLPreprocessPass.h"
 #include "shadowPass.h"
 #include "SSAOPass.h"
+#include "outputPass.h"
 using namespace DirectX;
 using namespace std;
 
@@ -440,6 +440,8 @@ void GameApp::PreparePasses()
 	mPasses.push_back(make_unique<SSAOPass>());
 	mPasses.push_back(make_unique<OpaqueLitPass>());
 	mPasses.push_back(make_unique<SkyboxPass>());
+	mPasses.push_back(make_unique<OutputPass>());
+
 #ifdef _DEBUG
 	mPasses.push_back(make_unique<DebugPass>());
 #endif
@@ -499,7 +501,6 @@ D3D12_CPU_DESCRIPTOR_HANDLE GameApp::CurrentBackBufferView() const
 	);
 }
 
-
 D3D12_CPU_DESCRIPTOR_HANDLE GameApp::DepthStencilView() const
 {
 	return mDepthStencilTarget->GetRtvDescriptorData().CPUHandle;
@@ -509,7 +510,6 @@ RenderTexture* GameApp::GetDepthStencilTarget() const
 {
 	return mDepthStencilTarget.get();
 }
-
 
 void GameApp::FlushCommandQueue()
 {

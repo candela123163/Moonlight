@@ -3,6 +3,8 @@
 #include "passBase.h"
 using Microsoft::WRL::ComPtr;
 
+class RenderTexture;
+
 class SkyboxPass final : public PassBase
 {
 public:
@@ -22,4 +24,6 @@ private:
 private:
     ComPtr<ID3D12RootSignature> mSignature = nullptr;
     ComPtr<ID3D12PipelineState> mPSO = nullptr;
+
+    RenderTexture* mRenderTarget = nullptr;
 };
