@@ -9,7 +9,7 @@ EnvLight GetEnvLight(Surface surface)
     float3 L = reflect(-surface.viewDir, surface.normal);
     EnvLight envLight;
     envLight.irradiance = GetEnvIrradiance(surface.normal) * ao;
-    envLight.prefilteredColor = GetEnvPrefilteredColor(L, surface.roughness) * ao;  
+    envLight.prefilteredColor = GetEnvPrefilteredColor(L, surface.roughness);
     
     return envLight;
 }

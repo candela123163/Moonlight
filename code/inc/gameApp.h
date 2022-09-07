@@ -107,6 +107,7 @@ private:
     D3D12_RECT mScissorRect;
     D3D_DRIVER_TYPE md3dDriverType = D3D_DRIVER_TYPE_HARDWARE;
     DXGI_FORMAT mBackBufferFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
+    DXGI_FORMAT mBackBufferFormatSRGB = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
     DXGI_FORMAT mDepthStencilFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
 
     std::vector<std::unique_ptr<FrameResources>> mFrameResources;

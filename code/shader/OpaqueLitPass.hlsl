@@ -18,8 +18,6 @@ struct VertexOut
     float3 tangentW : VAR_TANGENT_W;
     float3 biTangentW : VAR_BITANGENT_W;
     float2 uv : VAR_TEXCOORD;
-    
-    float4 test : VVV;
 };
 
 
@@ -33,8 +31,6 @@ VertexOut vs(VertexIn vin)
     vout.tangentW = mul(vin.tangentL, (float3x3) _World);
     vout.biTangentW = mul(vin.biTangentL, (float3x3) _World);
     vout.uv = vin.uv;
-    
-    vout.test = vout.posH;
     
     return vout;
 }
@@ -76,7 +72,6 @@ float4 ps(VertexOut pin) : SV_TARGET
     float3 radiance = 0.0f;
         
     //direct Light
-
     radiance += Shading(surface, GetSun(surface));
     
     for (int i = 0; i < GetPointLightCount(); i++)

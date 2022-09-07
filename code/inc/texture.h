@@ -65,9 +65,10 @@ public:
     Texture(ID3D12Device* device, 
         DescriptorHeap* descriptorHeap,
         ID3D12CommandQueue* commandQueue,
-        const std::filesystem::path& filePath);
+        const std::filesystem::path& filePath,
+        bool sRGB);
 
-    static Texture* GetOrLoad(const std::filesystem::path& texturePath, const GraphicContext& context);
+    static Texture* GetOrLoad(const std::filesystem::path& texturePath, bool sRGB, const GraphicContext& context);
 
 protected:
     void GetSRVDes(D3D12_SHADER_RESOURCE_VIEW_DESC& outDesc) override;

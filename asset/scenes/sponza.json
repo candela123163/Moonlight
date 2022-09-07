@@ -13,7 +13,7 @@
         "Position": [0.0, 1.0, 0.0],
         "Target": [1.0, 0.0, 0.0],
         "ShadowDistance": 15.0,
-        "ShadowCascade": [0.067, 0.2, 0.467, 1.0],
+        "ShadowCascade": [0.1, 0.25, 0.5, 1.0],
         "CascadeCount": 4
     },
 
@@ -24,21 +24,6 @@
     },
 
     "PointLights":[
-        {
-            "Position": [ -6.0, 2.0, 0.5 ],
-            "Color": [ 1.0, 0.0, 0.0 ],
-            "Intensity": 5.0,
-            "Near": 0.3,
-            "Range": 3.0
-        },
-
-        {
-            "Position": [ 6.0, 2.0, 0.5 ],
-            "Color": [ 0.0, 1.0, 0.0 ],
-            "Intensity": 5.0,
-            "Near": 0.3,
-            "Range": 3.0
-        }
 
     ],
 
@@ -46,10 +31,10 @@
         {
             "Position": [ 0.0, 2.0, 0.5 ],
             "Color": [ 0.89, 0.72, 0.05 ],
-            "Intensity": 5.0,
+            "Intensity": 8.0,
             "Direction": [ 1.0, -1.0, 1.0 ],
             "Near": 0.3,
-            "Range": 5.0,
+            "Range": 8.0,
             "OutterAngle": 60.0,
             "InnerAngle": 45.0
         }

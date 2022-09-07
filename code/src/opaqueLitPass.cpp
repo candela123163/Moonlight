@@ -100,7 +100,7 @@ void OpaqueLitPass::PreparePass(const GraphicContext& context)
     mIBLConstant = make_unique<UploadBuffer<IBLConstant, true>>(context.device);
     mRTConstant = make_unique<UploadBuffer<RenderTargetParamConstant, true>>(context.device);
 
-    mBRDFLUT = Texture::GetOrLoad(Globals::ImagePath / "IBL_BRDF_LUT.png", context);
+    mBRDFLUT = Texture::GetOrLoad(Globals::ImagePath / "IBL_BRDF_LUT.png", false, context);
 }
 
 void OpaqueLitPass::DrawPass(const GraphicContext& context)

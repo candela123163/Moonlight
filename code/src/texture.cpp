@@ -63,7 +63,8 @@ bool ITexture::CopyResource(ID3D12GraphicsCommandList* commandList, ITexture& co
 Texture::Texture(ID3D12Device* device, 
     DescriptorHeap* descriptorHeap,
     ID3D12CommandQueue* commandQueue, 
-    const filesystem::path& filePath)
+    const filesystem::path& filePath,
+    bool sRGB)
 {
     ResourceUploadBatch uploadBatch(device);
     uploadBatch.Begin();
@@ -72,12 +73,15 @@ Texture::Texture(ID3D12Device* device,
     bool isCube = false;
 
     if (extension == ".dds")
-    {    
-        CreateDDSTextureFromFile(device, uploadBatch, filePath.wstring().c_str(), mTexture.GetAddressOf(), true, 0, nullptr, &isCube);
+    {   
+        DDS_LOADER_FLAGS sRGBFlag = sRGB ? DDS_LOADER_FORCE_SRGB : DDS_LOADER_IGNORE_SRGB;
+        CreateDDSTextureFromFileEx(device, uploadBatch, filePath.wstring().c_str(),  0, D3D12_RESOURCE_FLAG_NONE, sRGBFlag, mTexture.GetAddressOf(), nullptr, &isCube);
     }
     else
     {
-        CreateWICTextureFromFile(device, uploadBatch, filePath.wstring().c_str(), mTexture.GetAddressOf(), true);
+        WIC_LOADER_FLAGS sRGBFlag = sRGB ? WIC_LOADER_FORCE_SRGB : WIC_LOADER_IGNORE_SRGB;
+        sRGBFlag |= WIC_LOADER_MIP_AUTOGEN;
+        CreateWICTextureFromFileEx(device, uploadBatch, filePath.wstring().c_str(), 0, D3D12_RESOURCE_FLAG_NONE, sRGBFlag, mTexture.GetAddressOf());
     }
 
     auto uploadOperation = uploadBatch.End(commandQueue);
@@ -128,7 +132,7 @@ void Texture::GetSRVDes(D3D12_SHADER_RESOURCE_VIEW_DESC& outDesc)
     }
 }
 
-Texture* Texture::GetOrLoad(const filesystem::path& texturePath, const GraphicContext& context)
+Texture* Texture::GetOrLoad(const filesystem::path& texturePath, bool sRGB, const GraphicContext& context)
 {
     string textureName = texturePath.filename().string();
     size_t textureKey = hash<string>()(textureName);
@@ -137,7 +141,7 @@ Texture* Texture::GetOrLoad(const filesystem::path& texturePath, const GraphicCo
     {
         return Globals::TextureContainer.Insert(
             textureKey,
-            make_unique<Texture>(context.device, context.descriptorHeap, context.commandQueue, texturePath)
+            make_unique<Texture>(context.device, context.descriptorHeap, context.commandQueue, texturePath, sRGB)
         );
     }
 

@@ -376,10 +376,16 @@ void GameApp::CreateDefaultRtvDsv()
 	CD3DX12_CPU_DESCRIPTOR_HANDLE cpuHandle = mRtvDescriptorData.CPUHandle;
 	UINT increment = mRtvDescriptorData.IncrementSize;
 
+	D3D12_RENDER_TARGET_VIEW_DESC desc;
+	desc.Format = mBackBufferFormatSRGB;
+	desc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
+	desc.Texture2D.MipSlice = 0;
+	desc.Texture2D.PlaneSlice = 0;
+
 	for (UINT i = 0; i < mSwapChainBufferCount; i++)
 	{
 		ThrowIfFailed(mSwapChain->GetBuffer(i, IID_PPV_ARGS(&mSwapChainBuffer[i])));
-		md3dDevice->CreateRenderTargetView(mSwapChainBuffer[i].Get(), nullptr, cpuHandle);
+		md3dDevice->CreateRenderTargetView(mSwapChainBuffer[i].Get(), &desc, cpuHandle);
 		cpuHandle.Offset(1, increment);
 	}
 
@@ -434,7 +440,9 @@ void GameApp::PreparePasses()
 	mPasses.push_back(make_unique<SSAOPass>());
 	mPasses.push_back(make_unique<OpaqueLitPass>());
 	mPasses.push_back(make_unique<SkyboxPass>());
+#ifdef _DEBUG
 	mPasses.push_back(make_unique<DebugPass>());
+#endif
 
 	for (auto& pass : mPasses) {
 		pass->PreparePass(mGraphicContext);

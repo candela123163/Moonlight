@@ -116,7 +116,7 @@ bool Scene::LoadSkyBox(const nlohmann::json& sceneConfig, const GraphicContext& 
     const aiScene* scene = importer.ReadFile(instancesFilePath.string(), aiProcess_Triangulate | aiProcess_OptimizeMeshes | aiProcess_CalcTangentSpace | aiProcess_FlipUVs);
 
     mSkybox.mesh = Mesh::GetOrLoad(0, scene, Globals::MeshContainer.Size(), context);
-    mSkybox.texture = Texture::GetOrLoad(Globals::CubemapPath / cubemapName, context);
+    mSkybox.texture = Texture::GetOrLoad(Globals::CubemapPath / cubemapName, true, context);
 
     return true;
 }

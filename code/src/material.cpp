@@ -51,7 +51,7 @@ Material* Material::GetOrLoad(int materiaIndex, const aiScene* scene, const Grap
         {
             texturePath = Globals::ImagePath / DUMMY_TEXTURE;
         }
-        albedo = Texture::GetOrLoad(texturePath, context);
+        albedo = Texture::GetOrLoad(texturePath, true, context);
         material->Get(AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_BASE_COLOR_FACTOR, albedoFactor);
 
         // normal
@@ -66,7 +66,7 @@ Material* Material::GetOrLoad(int materiaIndex, const aiScene* scene, const Grap
             texturePath = Globals::ImagePath / DUMMY_TEXTURE;
             useNormal = false;
         }
-        normal = Texture::GetOrLoad(texturePath, context);
+        normal = Texture::GetOrLoad(texturePath, false, context);
         material->Get(AI_MATKEY_GLTF_TEXTURE_SCALE(aiTextureType_NORMALS, 0), normalScale);
 
         // metallic & roughness
@@ -79,7 +79,7 @@ Material* Material::GetOrLoad(int materiaIndex, const aiScene* scene, const Grap
         {
             texturePath = Globals::ImagePath / DUMMY_TEXTURE;
         }
-        metalicRough = Texture::GetOrLoad(texturePath, context);
+        metalicRough = Texture::GetOrLoad(texturePath, false, context);
         material->Get(AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLIC_FACTOR, metalFactor);
         material->Get(AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_ROUGHNESS_FACTOR, roughFactor);
 

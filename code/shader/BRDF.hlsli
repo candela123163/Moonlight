@@ -131,7 +131,7 @@ BRDF IndirectBRDF(Surface surface)
     float3 F = FresnelSchlickRoughness(surface.viewDir, surface.normal, f0, surface.roughness);
     float3 Ks = F;
     float3 Kd = (1.0f - Ks) * (1.0f - surface.metallic);
-    float2 LUTuv = float2(saturate(dot(surface.normal, surface.viewDir)), surface.roughness);
+    float2 LUTuv = float2(saturate(dot(surface.normal, surface.viewDir)), 1.0f - surface.roughness);
     float2 specularBRDFFactor = GetEnvSpecularBRDFFactor(LUTuv);
     
     brdf.specular = f0 * specularBRDFFactor.x + specularBRDFFactor.y;
