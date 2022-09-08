@@ -170,13 +170,13 @@ void OpaqueLitPass::ReleasePass(const GraphicContext& context)
 void OpaqueLitPass::PreprocessPass(const GraphicContext& context)
 {
     size_t irradianceKey = hash<string>()("IrradianceMap");
-    RenderTexture* irradianceMap = Globals::RenderTextureContainer.Get(irradianceKey);
+    ITexture* irradianceMap = Globals::RenderTextureContainer.Get(irradianceKey);
 
     size_t prefilterKey = hash<string>()("PrefilterMap");
-    RenderTexture* prefilterMap = Globals::RenderTextureContainer.Get(prefilterKey);
+    ITexture* prefilterMap = Globals::RenderTextureContainer.Get(prefilterKey);
 
     size_t SSAOKey = hash<string>()("SSAO");
-    UnorderAccessTexture* ssaoMap = Globals::UATextureContainer.Get(SSAOKey);
+    ITexture* ssaoMap = Globals::UATextureContainer.Get(SSAOKey);
 
     IBLConstant iblConstant;
     iblConstant.BRDFLUTIndex = mBRDFLUT->GetSrvDescriptorData().HeapIndex;

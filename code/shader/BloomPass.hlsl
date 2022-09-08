@@ -107,11 +107,17 @@ float4 QuadraticThreshold(float4 color, float threshold, float3 curve)
     return color;
 }
 
+float Luminance(float3 linearRgb)
+{
+    return dot(linearRgb, float3(0.2126729, 0.7151522, 0.0721750));
+}
+
 float4 Prefilter(float4 color)
 {
     // x: threshold value (linear), y: threshold - knee, z: knee * 2, w: 0.25 / knee
     color = QuadraticThreshold(color, _Threshold.x, _Threshold.yzw);
-    return color;
+    float luminance = Luminance(color.rgb);
+    return color / (luminance + 1.0f);
 }
 
 
@@ -141,9 +147,9 @@ void UpSample_cs(int3 dispatchThreadID : SV_DispatchThreadID)
     int2 xy = dispatchThreadID.xy;
     float2 uv = GetOutputUV(dispatchThreadID.xy);
     
-    float4 bloom = UpsampleTent(_BloomChain, _BloomChainMipLevel, uv);
-    float4 color = _InputMap.SampleLevel(_SamplerLinearClamp, uv, _InputMapMipLevel);
-    _Output[xy] = color + bloom;
+    float4 accumulatedBloom = UpsampleTent(_BloomChain, _BloomChainMipLevel, uv);
+    float4 bloom = _InputMap.SampleLevel(_SamplerLinearClamp, uv, _InputMapMipLevel);
+    _Output[xy] = accumulatedBloom + _Intensity * bloom;
 }
 
 [numthreads(GROUP_SIZE, 1, 1)]
@@ -154,5 +160,5 @@ void Combine_cs(int3 dispatchThreadID : SV_DispatchThreadID)
     
     float4 bloom = UpsampleTent(_BloomChain, _BloomChainMipLevel, uv);
     float4 color = _InputMap.SampleLevel(_SamplerLinearClamp, uv, _InputMapMipLevel);
-    _Output[xy] = color + bloom * _Intensity;
+    _Output[xy] = float4(color.rgb + bloom.rgb * _Intensity, color.a);
 }

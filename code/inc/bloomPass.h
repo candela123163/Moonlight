@@ -5,7 +5,7 @@
 #include "frameResource.h"
 using Microsoft::WRL::ComPtr;
 
-class RenderTexture;
+class ITexture;
 class UnorderAccessTexture;
 
 class BloomPass final : public PassBase
@@ -57,18 +57,18 @@ private:
     std::unique_ptr<UnorderAccessTexture> mDownSampleChain;
     UnorderAccessTexture* mUpSampleChain;
 
-    RenderTexture* mInputRT;
+    ITexture* mInputRT;
 
     BloomConstant mBloomParam;
     std::unique_ptr<UploadBuffer<BloomConstant, true>> mBloomConstant;
 
     const float mThreshold = 1.0f;
-    const float mKnee = 0.5f;
-    const float mIntensity = 0.5f;
+    const float mKnee = 0.08f;
+    const float mIntensity = 0.7f;
 
     const int mMaxChainLength = 12;
     const int mMinChainLength = 2;
-    const int mMinDownScaleSize = 2;
+    const int mMinDownScaleSize = 16;
     int mIterationCount = 2;
 
     static constexpr int mNumConst32 = 2;
