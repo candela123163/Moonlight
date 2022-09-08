@@ -24,39 +24,53 @@ void ITexture::BindSRV(ID3D12Device* device, const DescriptorData& descriptorDat
 
 bool ITexture::TransitionTo(ID3D12GraphicsCommandList* commandList, TextureState targetState)
 {
-    if (targetState != mCurrState)
+    bool allSucceed = true;
+    for (size_t depthSlice = 0; depthSlice < mDepthCount; depthSlice++)
     {
-        D3D12_RESOURCE_STATES current, target;
-        if (GetD3DState(mCurrState, current) && GetD3DState(targetState, target)) {
-            commandList->ResourceBarrier(1, get_rvalue_ptr(CD3DX12_RESOURCE_BARRIER::Transition(mTexture.Get(), current, target)));
-            mCurrState = targetState;
-            return true;
+        for (size_t mipSlice = 0; mipSlice < mMipCount; mipSlice++)
+        {
+            allSucceed &= TransitionSubResourceTo(commandList, depthSlice, mipSlice, targetState);
         }
-        return false;
     }
-    return true;
+    return allSucceed;
 }
 
 bool ITexture::CopyResource(ID3D12GraphicsCommandList* commandList, ITexture& copySource)
 {
     if (!(GetWidth() == copySource.GetWidth() &&
         GetHeight() == copySource.GetHeight() &&
-        GetFormat() == copySource.GetFormat()))
+        GetFormat() == copySource.GetFormat()) &&
+        GetDepthCount() == copySource.GetDepthCount() &&
+        GetMipCount() == copySource.GetMipCount()
+        )
     {
         return false;
     }
 
-    TextureState destPreState = GetTextureState();
-    TextureState srcPreState = copySource.GetTextureState();
     if (TransitionTo(commandList, TextureState::CopyDest) &&
         copySource.TransitionTo(commandList, TextureState::CopySrouce))
     {
         commandList->CopyResource(GetResource(), copySource.GetResource());
-        TransitionTo(commandList, destPreState);
-        copySource.TransitionTo(commandList, srcPreState);
         return true;
     }
     return false;
+}
+
+bool ITexture::TransitionSubResourceTo(ID3D12GraphicsCommandList* commandList, UINT depthSlice, UINT mipSlice, TextureState targetState)
+{
+    UINT subResourceIdx = depthSlice * mMipCount + mipSlice;
+    TextureState& currState = mSubResourceState[subResourceIdx];
+    if (targetState != currState)
+    {
+        D3D12_RESOURCE_STATES current, target;
+        if (GetD3DState(currState, current) && GetD3DState(targetState, target)) {
+            commandList->ResourceBarrier(1, get_rvalue_ptr(CD3DX12_RESOURCE_BARRIER::Transition(mTexture.Get(), current, target, subResourceIdx)));
+            currState = targetState;
+            return true;
+        }
+        return false;
+    }
+    return true;
 }
 
 // ----------- Texture -------------
@@ -94,7 +108,8 @@ Texture::Texture(ID3D12Device* device,
     mMipCount = desc.MipLevels;
     mFormat = desc.Format;
     mDimension = isCube ? TextureDimension::CubeMap : (mDepthCount > 1 ? TextureDimension::Tex2DArray : TextureDimension::Tex2D);
-    mCurrState = TextureState::Read;
+
+    mSubResourceState.assign(mDepthCount * mMipCount, TextureState::Read);
 
     BindSRV(device, descriptorHeap);
 }
@@ -185,7 +200,8 @@ RenderTexture::RenderTexture(ID3D12Device* device, DescriptorHeap* descriptorHea
     mDimension = dimension;
     mUsage = usage;
     mFormat = format;
-    mCurrState = initState;
+
+    mSubResourceState.assign(depthCount * mipCount, initState);
 
     D3D12_RESOURCE_DESC texDesc;
     ZeroMemory(&texDesc, sizeof(D3D12_RESOURCE_DESC));
@@ -482,14 +498,17 @@ void RenderTexture::Clear(ID3D12GraphicsCommandList* commandList, UINT depthSlic
 
 // ----------- UnorderAccessTexture -------------
 UnorderAccessTexture::UnorderAccessTexture(ID3D12Device* device, DescriptorHeap* descriptorHeap,
-    UINT width, UINT height,
+    UINT width, UINT height, UINT mipCount,
     DXGI_FORMAT format,
     TextureState initState)
 {
     mWidth = width;
     mHeight = height;
+    mDepthCount = 1;
+    mMipCount = mipCount;
     mFormat = format;
-    mCurrState = initState;
+
+    mSubResourceState.assign(mDepthCount * mMipCount, initState);
 
     D3D12_RESOURCE_DESC texDesc;
     ZeroMemory(&texDesc, sizeof(D3D12_RESOURCE_DESC));
@@ -497,8 +516,8 @@ UnorderAccessTexture::UnorderAccessTexture(ID3D12Device* device, DescriptorHeap*
     texDesc.Alignment = 0;
     texDesc.Width = mWidth;
     texDesc.Height = mHeight;
-    texDesc.DepthOrArraySize = 1;
-    texDesc.MipLevels = 1;
+    texDesc.DepthOrArraySize = mDepthCount;
+    texDesc.MipLevels = mMipCount;
     texDesc.Format = mFormat;
     texDesc.SampleDesc.Count = 1;
     texDesc.SampleDesc.Quality = 0;
@@ -520,20 +539,32 @@ UnorderAccessTexture::UnorderAccessTexture(ID3D12Device* device, DescriptorHeap*
 }
 
 void UnorderAccessTexture::BindUAV(ID3D12Device* device,
-    D3D12_CPU_DESCRIPTOR_HANDLE descriptor)
+    D3D12_CPU_DESCRIPTOR_HANDLE descriptor, 
+    UINT depthSlice, UINT mipLevel )
 {
     D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc = {};
     uavDesc.Format = mFormat;
     uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D;
-    uavDesc.Texture2D.MipSlice = 0;
-    uavDesc.Texture2D.PlaneSlice = 0;
+    uavDesc.Texture2D.MipSlice = mipLevel;
+    uavDesc.Texture2D.PlaneSlice = depthSlice;
 
     device->CreateUnorderedAccessView(mTexture.Get(), nullptr, &uavDesc, descriptor);
 }
 
 void UnorderAccessTexture::BindUAV(ID3D12Device* device, DescriptorHeap* descriptorHeap)
 {
-    mUavDescriptorData = descriptorHeap->GetNextnSrvDescriptor(1);
+    mUavDescriptorData = descriptorHeap->GetNextnSrvDescriptor(mDepthCount * mMipCount);
+
+    CD3DX12_CPU_DESCRIPTOR_HANDLE cpuHandle = mUavDescriptorData.CPUHandle;
+    for (size_t i = 0; i < mDepthCount; i++)
+    {
+        for (size_t j = 0; j < mMipCount; j++)
+        {
+            BindUAV(device, cpuHandle, i, j);
+            cpuHandle.Offset(mUavDescriptorData.IncrementSize);
+        }
+    }
+
     BindUAV(device, mUavDescriptorData.CPUHandle);
 }
 
@@ -569,7 +600,17 @@ void UnorderAccessTexture::GetSRVDes(D3D12_SHADER_RESOURCE_VIEW_DESC& outDesc)
     outDesc.Format = mFormat;
     outDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
     outDesc.Texture2D.MostDetailedMip = 0;
-    outDesc.Texture2D.MipLevels = 1;
+    outDesc.Texture2D.MipLevels = mMipCount;
     outDesc.Texture2D.PlaneSlice = 0;
     outDesc.Texture2D.ResourceMinLODClamp = 0.0f;
+}
+
+DescriptorData UnorderAccessTexture::GetUavDescriptorData(UINT mipLevel ) const
+{
+    return DescriptorData{
+        CD3DX12_CPU_DESCRIPTOR_HANDLE(mUavDescriptorData.CPUHandle, mipLevel, mUavDescriptorData.IncrementSize),
+        CD3DX12_GPU_DESCRIPTOR_HANDLE(mUavDescriptorData.GPUHandle, mipLevel, mUavDescriptorData.IncrementSize),
+        mUavDescriptorData.IncrementSize,
+        mUavDescriptorData.HeapIndex + mipLevel
+    };
 }

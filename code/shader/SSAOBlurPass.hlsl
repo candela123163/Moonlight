@@ -1,4 +1,3 @@
-#include "Constant.hlsli"
 #include "Util.hlsli"
 
 Texture2D _2DMaps[] : register(t0, space0);

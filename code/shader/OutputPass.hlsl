@@ -38,7 +38,7 @@ float3 NeutralTonemap(float3 x)
 
 float4 ps(PostProc_VSOut pin) : SV_Target
 {
-    float3 color = _ColorMap.Sample(_SamplerLinearClamp, pin.uv).rgb;
-    float3 toneMapped = NeutralTonemap(color);
-    return float4(toneMapped, 1.0f);
+    float4 color = _ColorMap.SampleLevel(_SamplerLinearClamp, pin.uv, 0);
+    float3 toneMapped = NeutralTonemap(color.rgb);
+    return float4(toneMapped, color.a);
 }

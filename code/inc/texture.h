@@ -34,15 +34,17 @@ public:
     void BindSRV(ID3D12Device* device, const DescriptorData& descriptorData);
     bool TransitionTo(ID3D12GraphicsCommandList* commandList, TextureState targetState);
     bool CopyResource(ID3D12GraphicsCommandList* commandList, ITexture& copySource);
-    const DescriptorData& GetSrvDescriptorData() const { return mSrvDescriptorData; }
+    DescriptorData GetSrvDescriptorData() const { return mSrvDescriptorData; }
 
-    UINT GetWidth() const { return mWidth; }
-    UINT GetHeight() const { return mHeight; }
+    UINT GetWidth(int mipLevel = 0) const { return std::max((UINT)1, mWidth >> mipLevel); }
+    UINT GetHeight(int mipLevel = 0) const { return std::max((UINT)1, mHeight >> mipLevel); }
     DXGI_FORMAT GetFormat() const { return mFormat; }
     UINT GetDepthCount() const { return mDepthCount; }
     UINT GetMipCount() const { return mMipCount; }
     TextureDimension GetDimension() const { return mDimension; }
-    TextureState GetTextureState() const { return mCurrState; }
+
+    TextureState GetSubResourceState(UINT depthSlice, UINT mipSlice) const { return mSubResourceState[depthSlice * mMipCount + mipSlice]; }
+    bool TransitionSubResourceTo(ID3D12GraphicsCommandList* commandList, UINT depthSlice, UINT mipSlice, TextureState targetState);
         
 protected:
     virtual void GetSRVDes(D3D12_SHADER_RESOURCE_VIEW_DESC& outDesc) = 0;
@@ -54,7 +56,8 @@ protected:
     TextureDimension mDimension = TextureDimension::Tex2D;
     DXGI_FORMAT mFormat = DXGI_FORMAT_UNKNOWN;
     DescriptorData mSrvDescriptorData;
-    TextureState mCurrState;
+
+    std::vector<TextureState> mSubResourceState;
 };
 
 
@@ -102,7 +105,7 @@ public:
 
     void SetViewPort(ID3D12GraphicsCommandList* commandList, UINT mipLevel = 0);
 
-    const DescriptorData& GetRtvDescriptorData() const { return mRtvDescriptorData; }
+    DescriptorData GetRtvDescriptorData() const { return mRtvDescriptorData; }
 
     void SetAsRenderTarget(ID3D12GraphicsCommandList* commandList,
         UINT depthSlice, UINT mipLevel,
@@ -134,16 +137,17 @@ class UnorderAccessTexture final : public ITexture
 {
 public:
     UnorderAccessTexture(ID3D12Device* device, DescriptorHeap* descriptorHeap,
-        UINT width, UINT height, 
+        UINT width, UINT height, UINT mipCount,
         DXGI_FORMAT format,
         TextureState initState = TextureState::Common);
 
     void BindUAV(ID3D12Device* device,
-        D3D12_CPU_DESCRIPTOR_HANDLE descriptor);
+        D3D12_CPU_DESCRIPTOR_HANDLE descriptor, 
+        UINT depthSlice = 0, UINT mipLevel = 0);
 
     void BindUAV(ID3D12Device* device, DescriptorHeap* descriptorHeap);
 
-    const DescriptorData& GetUavDescriptorData() const { return mUavDescriptorData; }
+    DescriptorData GetUavDescriptorData(UINT mipLevel = 0) const;
 
 protected:
     bool GetD3DState(TextureState state, D3D12_RESOURCE_STATES& outState) override;

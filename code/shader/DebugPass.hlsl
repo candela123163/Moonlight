@@ -26,34 +26,33 @@ TextureCube _CubeMaps[] : register(t0, space1);
 float4 ps(PostProc_VSOut pin) : SV_TARGET
 {
     float2 uv = pin.uv;
-    uint texIndex;
     
     if(uv.x <= 0.5f && uv.y <= 0.5f)
     {
         uv *= 2.0f;
-        texIndex = m0;
-        return float4(_2DMaps[9].Sample(_SamplerLinearClamp, uv).rrr, 1.0f);
+        
+        return float4(_2DMaps[20].SampleLevel(_SamplerLinearClamp, uv, 7).rgb, 1.0f);
     }
     else if(uv.x <= 1.0f && uv.y <= 0.5f)
     {
         uv.x = uv.x * 2.0f - 1.0f;
         uv.y *= 2.0f;
-        texIndex = 0;
-        return float4(_2DMaps[0].Sample(_SamplerLinearClamp, uv).rrr, 1.0f);
+        
+        return float4(_2DMaps[29].SampleLevel(_SamplerLinearClamp, uv, 0).rgb, 1.0f);
     }
     else if(uv.x <= 0.5f && uv.y <= 1.0f)
     {
         uv.x *= 2.0f;
         uv.y = uv.y * 2.0f - 1.0f;
-        texIndex = 4;
-        return float4(_2DMaps[4].SampleLevel(_SamplerPointClamp, uv, 0).rgb, 1.0f);
+        
+        return float4(_2DMaps[9].SampleLevel(_SamplerPointClamp, uv, 0).rgb, 1.0f);
 
     }
     else
     {
         uv.x = uv.x * 2.0f - 1.0f;
         uv.y = uv.y * 2.0f - 1.0f;
-        texIndex = 5;    
+            
         return float4(_2DMaps[5].SampleLevel(_SamplerPointClamp, uv, 0).rgb, 1.0f);
 
     }

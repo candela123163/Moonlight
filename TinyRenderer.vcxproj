@@ -142,6 +142,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="code\src\bloomPass.cpp" />
     <ClCompile Include="code\src\camera.cpp" />
     <ClCompile Include="code\src\debugPass.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Use</PrecompiledHeader>
@@ -185,6 +186,7 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="code\inc\bloomPass.h" />
     <ClInclude Include="code\inc\camera.h" />
     <ClInclude Include="code\inc\d3dx12.h" />
     <ClInclude Include="code\inc\debugPass.h" />

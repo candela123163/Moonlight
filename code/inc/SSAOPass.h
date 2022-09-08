@@ -28,8 +28,6 @@ private:
     void DrawSSAO(const GraphicContext& context);
     void BlurSSAO(const GraphicContext& context);
 
-    void SwapBlurMap(const GraphicContext& context, bool filp);
-
     enum class NormalRootSignatureParam
     {
         ObjectConstant = 0,

@@ -9,6 +9,7 @@
 #include "IBLPreprocessPass.h"
 #include "shadowPass.h"
 #include "SSAOPass.h"
+#include "bloomPass.h"
 #include "outputPass.h"
 using namespace DirectX;
 using namespace std;
@@ -440,6 +441,7 @@ void GameApp::PreparePasses()
 	mPasses.push_back(make_unique<SSAOPass>());
 	mPasses.push_back(make_unique<OpaqueLitPass>());
 	mPasses.push_back(make_unique<SkyboxPass>());
+	mPasses.push_back(make_unique<BloomPass>());
 	mPasses.push_back(make_unique<OutputPass>());
 
 #ifdef _DEBUG

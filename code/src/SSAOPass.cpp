@@ -79,7 +79,7 @@ void SSAOPass::CreateResource(const GraphicContext& context)
 
     mSSAOBlurXMap = make_unique<UnorderAccessTexture>(
         context.device, context.descriptorHeap, 
-        mSSAOWidth, mSSAOHeight,
+        mSSAOWidth, mSSAOHeight, 1,
         DXGI_FORMAT_R16_UNORM);
 
     size_t SSAOKey = hash<string>()("SSAO");
@@ -87,7 +87,7 @@ void SSAOPass::CreateResource(const GraphicContext& context)
         SSAOKey,
         make_unique<UnorderAccessTexture>(
             context.device, context.descriptorHeap,
-            mSSAOWidth, mSSAOHeight,
+            mSSAOWidth, mSSAOHeight, 1,
             DXGI_FORMAT_R16_UNORM)
     );
 
@@ -430,7 +430,6 @@ void SSAOPass::BlurSSAO(const GraphicContext& context)
         context.commandList->Dispatch(mSSAOWidth, numGroupY, 1);
     }
 
-    mSSAOBlurYMap->TransitionTo(context.commandList, TextureState::Read);
 }
 
 
