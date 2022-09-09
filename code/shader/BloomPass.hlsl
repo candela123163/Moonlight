@@ -2,6 +2,8 @@
 
 #define GROUP_SIZE 256
 
+#define BLOOM_CLAMP  65000.f
+
 Texture2D<float4> _BloomChain : register(t0);
 Texture2D<float4> _InputMap : register(t1);
 RWTexture2D<float4> _Output : register(u0);
@@ -114,6 +116,7 @@ float Luminance(float3 linearRgb)
 
 float4 Prefilter(float4 color)
 {
+    color = min(color, BLOOM_CLAMP);
     // x: threshold value (linear), y: threshold - knee, z: knee * 2, w: 0.25 / knee
     color = QuadraticThreshold(color, _Threshold.x, _Threshold.yzw);
     float luminance = Luminance(color.rgb);
