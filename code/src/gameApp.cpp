@@ -10,6 +10,7 @@
 #include "shadowPass.h"
 #include "SSAOPass.h"
 #include "bloomPass.h"
+#include "FXAAPass.h"
 #include "outputPass.h"
 using namespace DirectX;
 using namespace std;
@@ -377,16 +378,10 @@ void GameApp::CreateDefaultRtvDsv()
 	CD3DX12_CPU_DESCRIPTOR_HANDLE cpuHandle = mRtvDescriptorData.CPUHandle;
 	UINT increment = mRtvDescriptorData.IncrementSize;
 
-	D3D12_RENDER_TARGET_VIEW_DESC desc;
-	desc.Format = mBackBufferFormatSRGB;
-	desc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
-	desc.Texture2D.MipSlice = 0;
-	desc.Texture2D.PlaneSlice = 0;
-
 	for (UINT i = 0; i < mSwapChainBufferCount; i++)
 	{
 		ThrowIfFailed(mSwapChain->GetBuffer(i, IID_PPV_ARGS(&mSwapChainBuffer[i])));
-		md3dDevice->CreateRenderTargetView(mSwapChainBuffer[i].Get(), &desc, cpuHandle);
+		md3dDevice->CreateRenderTargetView(mSwapChainBuffer[i].Get(), nullptr, cpuHandle);
 		cpuHandle.Offset(1, increment);
 	}
 
@@ -442,6 +437,7 @@ void GameApp::PreparePasses()
 	mPasses.push_back(make_unique<OpaqueLitPass>());
 	mPasses.push_back(make_unique<SkyboxPass>());
 	mPasses.push_back(make_unique<BloomPass>());
+	mPasses.push_back(make_unique<FXAAPass>());
 	mPasses.push_back(make_unique<OutputPass>());
 
 #ifdef _DEBUG

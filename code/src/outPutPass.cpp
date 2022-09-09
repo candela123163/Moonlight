@@ -68,7 +68,7 @@ void OutputPass::PreparePass(const GraphicContext& context)
 
 void OutputPass::PreprocessPass(const GraphicContext& context)
 {
-    size_t rtKey = hash<string>()("Bloom");
+    size_t rtKey = hash<string>()("FXAA");
     mInputRT = Globals::UATextureContainer.Get(rtKey);
 }
 

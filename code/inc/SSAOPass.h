@@ -80,6 +80,8 @@ private:
         int     DepthMapIndex;
         int     MapWidth;
         int     MapHeight;
+
+        float NormalDepthSampleScale;
     };
 
 private:
@@ -106,5 +108,5 @@ private:
     std::unique_ptr<UploadBuffer<RenderTargetParamConstant, true>> mSSAORTConstant;
     std::unique_ptr<UploadBuffer<BlurConstant, true>> mBlurConstant;
 
-    UINT mBlurCount = 3;
+    UINT mBlurCount = 2;
 };

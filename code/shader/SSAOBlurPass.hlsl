@@ -2,6 +2,7 @@
 
 Texture2D _2DMaps[] : register(t0, space0);
 Texture2D<float> _AOMap : register(t0, space1);
+RWTexture2D<float> _Output : register(u0);
 
 cbuffer BlurConstant : register(b0)
 {
@@ -14,9 +15,10 @@ cbuffer BlurConstant : register(b0)
     int _DepthMapIndex;
     int _MapWidth;
     int _MapHeight;
+    
+    float _NormalDepthSampleScale;
 }
 
-RWTexture2D<float> _Output : register(u0);
 
 #define GROUP_SIZE 256
 #define MAX_BLUR_RADIUS 10
@@ -30,6 +32,8 @@ groupshared float3 _CacheNormal[CACHE_SIZE];
 void SetCache(int cacheIdx, int2 xy)
 {
     _CacheAO[cacheIdx] = _AOMap[xy].r;
+    
+    xy = (int) round(xy * _NormalDepthSampleScale);
     _CacheDepth[cacheIdx] = _2DMaps[_DepthMapIndex][xy].r;
     _CacheNormal[cacheIdx] = _2DMaps[_NormalMapIndex][xy].xyz;
 }
@@ -40,6 +44,7 @@ void XBlur_cs(
     int3 groupThreadID : SV_GroupThreadID, 
     int3 dispatchThreadID : SV_DispatchThreadID)
 {
+    
     if(groupThreadID.x < _BlurRadius)
     {
         int x = max(0, dispatchThreadID.x - _BlurRadius);

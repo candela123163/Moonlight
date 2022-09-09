@@ -284,7 +284,7 @@ void BloomPass::DoUpSample(const GraphicContext& context)
 
 void BloomPass::DoCombine(const GraphicContext& context)
 {
-    context.commandList->SetPipelineState(mUpSamplePSO.Get());
+    context.commandList->SetPipelineState(mCombinePSO.Get());
     
     int bloomChainMipLevel = 1;
     int inputMipLevel = 0;
@@ -322,7 +322,6 @@ void BloomPass::DoCombine(const GraphicContext& context)
     UINT numGroupX = (UINT)ceilf(float(mUpSampleChain->GetWidth(0)) / COMPUTE_THREAD_GROUP);
     context.commandList->Dispatch(numGroupX, mUpSampleChain->GetHeight(0), 1);
 
-    mUpSampleChain->TransitionSubResourceTo(context.commandList, 0, 0, TextureState::Read);
 }
 
 void  BloomPass::CalculateBloomParam(float inputWidth, float inputHeight)

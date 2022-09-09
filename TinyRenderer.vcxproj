@@ -153,6 +153,7 @@
     <ClCompile Include="code\src\frameResource.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Use</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="code\src\FXAAPass.cpp" />
     <ClCompile Include="code\src\gameApp.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Use</PrecompiledHeader>
     </ClCompile>
@@ -192,6 +193,7 @@
     <ClInclude Include="code\inc\debugPass.h" />
     <ClInclude Include="code\inc\descriptor.h" />
     <ClInclude Include="code\inc\frameResource.h" />
+    <ClInclude Include="code\inc\FXAAPass.h" />
     <ClInclude Include="code\inc\gameApp.h" />
     <ClInclude Include="code\inc\globals.h" />
     <ClInclude Include="code\inc\graphicContext.h" />

@@ -23,10 +23,10 @@ void SSAOPass::PreparePass(const GraphicContext& context)
 void SSAOPass::PreprocessPass(const GraphicContext& context)
 {
     SSAOConstant ssaoParam;
-    ssaoParam.AORadius = 0.4f;
+    ssaoParam.AORadius = 0.3f;
     ssaoParam.AOSampleCount = 24;
-    ssaoParam.AOPower = 6.0f;
-    ssaoParam.AOFadeRange = 0.3f;
+    ssaoParam.AOPower = 8.0f;
+    ssaoParam.AOFadeRange = 0.4f;
     ssaoParam.NormalMapIndex = mNormalMap->GetSrvDescriptorData().HeapIndex;
     ssaoParam.DepthMapIndex = GameApp::GetApp()->GetDepthStencilTarget()->GetSrvDescriptorData().HeapIndex;
     mSSAOConstant->CopyData(ssaoParam);
@@ -44,6 +44,7 @@ void SSAOPass::PreprocessPass(const GraphicContext& context)
     blurParam.DepthMapIndex = ssaoParam.DepthMapIndex;
     blurParam.MapWidth = mSSAOWidth;
     blurParam.MapHeight = mSSAOHeight;
+    blurParam.NormalDepthSampleScale = float(context.screenWidth) / blurParam.MapWidth;
     mBlurConstant->CopyData(blurParam);
 }
 
