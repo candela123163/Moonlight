@@ -64,7 +64,7 @@ private:
 
     const float mThreshold = 1.0f;
     const float mKnee = 0.08f;
-    const float mIntensity = 0.7f;
+    const float mIntensity = 0.99f;
 
     const int mMaxChainLength = 12;
     const int mMinChainLength = 2;

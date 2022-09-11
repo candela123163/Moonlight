@@ -58,7 +58,7 @@ float GGX_D(float3 n, float3 h, float roughness)
     float alpha = roughness * roughness;
     float alpha2 = alpha * alpha;
     float cos2Theta = nDotH * nDotH;
-    float t = (alpha2 - 1.0f) * cos2Theta + 1.0f;
+    float t = max(0.001f, (alpha2 - 1.0f) * cos2Theta + 1.0f);
     return alpha2 / (PI * t * t);
 }
 

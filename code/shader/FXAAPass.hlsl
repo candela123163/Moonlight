@@ -226,10 +226,12 @@ float GetEdgeBlending(LumaNeighbor neighbor, Edge edge, float2 uv)
 [numthreads(GROUP_SIZE, 1, 1)]
 void FXAA_cs(int3 dispatchThreadID : SV_DispatchThreadID)
 {
+    
     int2 xy = dispatchThreadID.xy;
     float2 uv = xy * _TexelSize;
     
     LumaNeighbor neighbor = GetNeighbor(uv);
+    
     if (!CanSkipFXAA(neighbor))
     {
         Edge edge = GetEdge(neighbor);
@@ -237,7 +239,7 @@ void FXAA_cs(int3 dispatchThreadID : SV_DispatchThreadID)
             GetSubPixelBlending(neighbor),
             GetEdgeBlending(neighbor, edge, uv)
         );
- 
+                
         if (edge.isHorizontal)
         {
             uv.y += blending * edge.pixelStep;
@@ -247,6 +249,8 @@ void FXAA_cs(int3 dispatchThreadID : SV_DispatchThreadID)
             uv.x += blending * edge.pixelStep;
         }
     }
-    
+
     _Output[xy] = _ColorMap.SampleLevel(_SamplerLinearClamp, uv, 0);
+    
+
 }

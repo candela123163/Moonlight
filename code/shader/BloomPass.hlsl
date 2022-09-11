@@ -2,7 +2,7 @@
 
 #define GROUP_SIZE 256
 
-#define BLOOM_CLAMP  65000.f
+#define FLOAT16_MAX  65500
 
 Texture2D<float4> _BloomChain : register(t0);
 Texture2D<float4> _InputMap : register(t1);
@@ -62,11 +62,11 @@ float4 DownsampleBox13Tap(Texture2D<float4> tex, uint mipLevel, float2 uv)
 
     float2 div = (1.0 / 4.0) * float2(0.5, 0.125);
 
-    float4 o = (D + E + I + J) * div.x;
-    o += (A + B + G + F) * div.y;
-    o += (B + C + H + G) * div.y;
-    o += (F + G + L + K) * div.y;
-    o += (G + H + M + L) * div.y;
+    float4 o = D * div.x + E * div.x + I * div.x + J * div.x;
+    o += A * div.y + B * div.y + G * div.y + F * div.y;
+    o += B * div.y + C * div.y + H * div.y + G * div.y;
+    o += F * div.y + G * div.y + L * div.y + K * div.y;
+    o += G * div.y + H * div.y + M * div.y + L * div.y;
 
     return o;
 }
@@ -79,19 +79,21 @@ float4 UpsampleTent(Texture2D tex, uint mipLevel, float2 uv)
     float4 d = texelSize.xyxy * float4(1.0, 1.0, -1.0, 0.0);
 
     float4 s;
-    s = tex.SampleLevel(_SamplerLinearClamp, uv - d.xy, mipLevel);
-    s += tex.SampleLevel(_SamplerLinearClamp, uv - d.wy, mipLevel) * 2.0;
-    s += tex.SampleLevel(_SamplerLinearClamp, uv - d.zy, mipLevel);
+    float deno = 1.0f / 16.0f;
+    
+    s = tex.SampleLevel(_SamplerLinearClamp, uv - d.xy, mipLevel) * deno;
+    s += tex.SampleLevel(_SamplerLinearClamp, uv - d.wy, mipLevel) * 2.0 * deno;
+    s += tex.SampleLevel(_SamplerLinearClamp, uv - d.zy, mipLevel) * deno;
 
-    s += tex.SampleLevel(_SamplerLinearClamp, uv + d.zw, mipLevel) * 2.0;
-    s += tex.SampleLevel(_SamplerLinearClamp, uv, mipLevel) * 4.0;
-    s += tex.SampleLevel(_SamplerLinearClamp, uv + d.xw, mipLevel) * 2.0;
+    s += tex.SampleLevel(_SamplerLinearClamp, uv + d.zw, mipLevel) * 2.0 * deno;
+    s += tex.SampleLevel(_SamplerLinearClamp, uv, mipLevel) * 4.0 * deno;
+    s += tex.SampleLevel(_SamplerLinearClamp, uv + d.xw, mipLevel) * 2.0 * deno;
 
-    s += tex.SampleLevel(_SamplerLinearClamp, uv + d.zy, mipLevel);
-    s += tex.SampleLevel(_SamplerLinearClamp, uv + d.wy, mipLevel) * 2.0;
-    s += tex.SampleLevel(_SamplerLinearClamp, uv + d.xy, mipLevel);
+    s += tex.SampleLevel(_SamplerLinearClamp, uv + d.zy, mipLevel) * deno;
+    s += tex.SampleLevel(_SamplerLinearClamp, uv + d.wy, mipLevel) * 2.0 * deno;
+    s += tex.SampleLevel(_SamplerLinearClamp, uv + d.xy, mipLevel) * deno;
 
-    return s * (1.0 / 16.0);
+    return s;
 }
 
 float4 QuadraticThreshold(float4 color, float threshold, float3 curve)
@@ -116,7 +118,7 @@ float Luminance(float3 linearRgb)
 
 float4 Prefilter(float4 color)
 {
-    color = min(color, BLOOM_CLAMP);
+    //color = min(color, BLOOM_CLAMP);
     // x: threshold value (linear), y: threshold - knee, z: knee * 2, w: 0.25 / knee
     color = QuadraticThreshold(color, _Threshold.x, _Threshold.yzw);
     float luminance = Luminance(color.rgb);
@@ -152,6 +154,11 @@ float3 NeutralTonemap(float3 x)
     return x;
 }
 
+float4 ClampHDR(float4 color, float scale)
+{
+    return clamp(color, 0.0f, scale * FLOAT16_MAX);
+}
+
 
 [numthreads(GROUP_SIZE, 1, 1)]
 void Prefiler_cs(int3 dispatchThreadID : SV_DispatchThreadID)
@@ -181,7 +188,7 @@ void UpSample_cs(int3 dispatchThreadID : SV_DispatchThreadID)
     
     float4 accumulatedBloom = UpsampleTent(_BloomChain, _BloomChainMipLevel, uv);
     float4 bloom = _InputMap.SampleLevel(_SamplerLinearClamp, uv, _InputMapMipLevel);
-    _Output[xy] = accumulatedBloom + _Intensity * bloom;
+    _Output[xy] = lerp(bloom, accumulatedBloom, _Intensity);
 }
 
 [numthreads(GROUP_SIZE, 1, 1)]
@@ -190,9 +197,13 @@ void Combine_cs(int3 dispatchThreadID : SV_DispatchThreadID)
     int2 xy = dispatchThreadID.xy;
     float2 uv = GetOutputUV(dispatchThreadID.xy);
     
-    float4 bloom = UpsampleTent(_BloomChain, _BloomChainMipLevel, uv);
+    float4 bloom = UpsampleTent(_BloomChain, _BloomChainMipLevel, uv);    
     float4 color = _InputMap.SampleLevel(_SamplerLinearClamp, uv, _InputMapMipLevel);
-    float3 toneMapped = NeutralTonemap(color.rgb + bloom.rgb * _Intensity);
+        
+    bloom += color - Prefilter(color);
+    
+    float3 toneMapped = NeutralTonemap(lerp(color.rgb, bloom.rgb, _Intensity));
+
     float3 gammaCorrect = pow(toneMapped, 1.0f / 2.2f);
     float gammaSpaceLuma = sqrt(Luminance(toneMapped));
     _Output[xy] = float4(gammaCorrect, gammaSpaceLuma);

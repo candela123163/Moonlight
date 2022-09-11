@@ -20,7 +20,7 @@
     "Sun": {
         "Direction": [-1.0, -15.0, -3.0],
         "Color": [ 0.513, 0.494, 0.462 ],
-        "Intensity":  20.0
+        "Intensity":  50.0
     },
 
     "PointLights":[
