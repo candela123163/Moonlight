@@ -31,6 +31,16 @@ float FadeOut(float x, float upperBound, float fadeRange)
     fadeRange = saturate(fadeRange);
     return saturate((1.0f - x / upperBound) / fadeRange);
 }
+
+float3 EncodeNormal(float3 normal_xyz)
+{
+    return normal_xyz * 0.5f + 0.5f;
+}
+
+float3 DecodeNormal(float3 normal_rgb)
+{
+    return normal_rgb * 2.0f - 1.0f;
+}
 // ==========================================================================
 
 

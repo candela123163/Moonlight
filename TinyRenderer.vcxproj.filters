@@ -84,6 +84,9 @@
     <ClCompile Include="code\src\FXAAPass.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="code\src\preZPass.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="code\inc\gameApp.h">
@@ -162,6 +165,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="code\inc\FXAAPass.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="code\inc\preZPass.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

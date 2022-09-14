@@ -25,7 +25,7 @@ cbuffer SSAOConsant : register(b2)
 
 float3 GetNormal(float2 uv)
 {
-    return _2DMaps[_NormalMapIndex].SampleLevel(_SamplerPointClamp, uv, 0).xyz;
+    return DecodeNormal(_2DMaps[_NormalMapIndex].SampleLevel(_SamplerPointClamp, uv, 0).rgb);
 }
 
 float GetNDCDepth(float2 uv)
@@ -68,7 +68,7 @@ float ps(PostProc_VSOut pin) : SV_Target
         float3 offsetV = NormalTangentToWorld(offsetT, nV) * _AORadius;
   
         float3 sample_pV = pV + offsetV;
-        float4 sample_pH = mul(float4(sample_pV, 1.0f), _Proj);
+        float4 sample_pH = mul(float4(sample_pV, 1.0f), _Proj);        
         sample_pH /= sample_pH.w;
         float2 sample_uv = NDCXYToUV(sample_pH.xy);
         

@@ -86,6 +86,16 @@ enum class RenderTextureUsage
     DepthBuffer = 1
 };
 
+class RenderTexture;
+struct RenderTarget
+{
+    RenderTarget(RenderTexture* rtx, UINT depthSlice_ = 0, UINT mipLevel_ = 0):
+        renderTexture(rtx), depthSlice(depthSlice_), mipLevel(mipLevel_) { }
+
+    RenderTexture* renderTexture = nullptr;
+    UINT depthSlice = 0;
+    UINT mipLevel = 0;
+};
 
 class RenderTexture final : public ITexture
 {
@@ -117,6 +127,9 @@ public:
         UINT depthSlice, UINT mipLevel,
         const RenderTexture& other, UINT otherDepthSlice, UINT otherMipLevel
     );
+
+    static void SetRenderTargets(ID3D12GraphicsCommandList* commandList,
+        const std::initializer_list<RenderTarget>& renderTargets, RenderTarget depthStencilTarget);
 
     void Clear(ID3D12GraphicsCommandList* commandList, UINT depthSlice, UINT mipLevel);
 

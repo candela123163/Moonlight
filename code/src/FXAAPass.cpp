@@ -15,9 +15,9 @@ void FXAAPass::PreprocessPass(const GraphicContext& context)
     size_t rtKey = hash<string>()("Bloom");
     mInputRT = Globals::UATextureContainer.Get(rtKey);
 
-    mFXAAParam.FixedThreshold = 0.0433f;
-    mFXAAParam.RelativeThreshold = 0.86f;
-    mFXAAParam.SubPixelBlending = 0.75f;
+    mFXAAParam.FixedThreshold = 0.0833f;
+    mFXAAParam.RelativeThreshold = 0.1666f;
+    mFXAAParam.SubPixelBlending = 0.8f;
     mFXAAParam.TexelSize = XMFLOAT2(1.0f / context.screenWidth, 1.0f / context.screenHeight);
     mFXAAConstant->CopyData(mFXAAParam);
 }

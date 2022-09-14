@@ -8,6 +8,7 @@
 #include "opaqueLitPass.h"
 #include "IBLPreprocessPass.h"
 #include "shadowPass.h"
+#include "preZPass.h"
 #include "SSAOPass.h"
 #include "bloomPass.h"
 #include "FXAAPass.h"
@@ -433,6 +434,7 @@ void GameApp::PreparePasses()
 	// load pass
 	mPasses.push_back(make_unique<IBLPreprocessPass>());
 	mPasses.push_back(make_unique<ShadowPass>());
+	mPasses.push_back(make_unique<PreZPass>());
 	mPasses.push_back(make_unique<SSAOPass>());
 	mPasses.push_back(make_unique<OpaqueLitPass>());
 	mPasses.push_back(make_unique<SkyboxPass>());

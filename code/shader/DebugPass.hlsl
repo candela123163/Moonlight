@@ -1,5 +1,6 @@
 #include "Constant.hlsli"
 #include "StaticSamplers.hlsli"
+#include "Util.hlsli"
 
 cbuffer MapIndicesConstant : register(b1)
 {
@@ -31,21 +32,21 @@ float4 ps(PostProc_VSOut pin) : SV_TARGET
     {
         uv *= 2.0f;
         
-        return float4(_2DMaps[17].SampleLevel(_SamplerLinearClamp, uv, 7).rgb, 1.0f);
+        return float4(_2DMaps[4].SampleLevel(_SamplerLinearClamp, uv, 0).rgb, 1.0f);
     }
     else if(uv.x <= 1.0f && uv.y <= 0.5f)
     {
         uv.x = uv.x * 2.0f - 1.0f;
         uv.y *= 2.0f;
         
-        return float4(_2DMaps[23].SampleLevel(_SamplerLinearClamp, uv, 0).rgb, 1.0f);
+        return float4(DecodeNormal(_2DMaps[4].SampleLevel(_SamplerLinearClamp, uv, 0).rgb), 1.0f);
     }
     else if(uv.x <= 0.5f && uv.y <= 1.0f)
     {
         uv.x *= 2.0f;
         uv.y = uv.y * 2.0f - 1.0f;
         
-        return float4(_2DMaps[9].SampleLevel(_SamplerPointClamp, uv, 0).rgb, 1.0f);
+        return float4(_2DMaps[8].SampleLevel(_SamplerPointClamp, uv, 0).rrr, 1.0f);
 
     }
     else
@@ -53,7 +54,7 @@ float4 ps(PostProc_VSOut pin) : SV_TARGET
         uv.x = uv.x * 2.0f - 1.0f;
         uv.y = uv.y * 2.0f - 1.0f;
             
-        return float4(_2DMaps[5].SampleLevel(_SamplerPointClamp, uv, 0).rgb, 1.0f);
+        return float4(_2DMaps[10].SampleLevel(_SamplerPointClamp, uv, 0).rrr, 1.0f);
 
     }
     

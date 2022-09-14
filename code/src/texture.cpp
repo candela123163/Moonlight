@@ -478,6 +478,60 @@ void RenderTexture::SetAsRenderTarget(ID3D12GraphicsCommandList* commandList,
     SetAsRenderTarget(commandList, depthSlice, mipLevel, otherRTVNum, otherRTVHandles, otherDSVHandles);
 }
 
+void RenderTexture::SetRenderTargets(ID3D12GraphicsCommandList* commandList,
+    const std::initializer_list<RenderTarget>& renderTargets, RenderTarget depthStencilTarget)
+{
+    UINT width = 0;
+    UINT height = 0;
+
+    int numRtv = renderTargets.size();
+    D3D12_CPU_DESCRIPTOR_HANDLE* rtvHandles = nullptr;
+    D3D12_CPU_DESCRIPTOR_HANDLE* dsvHandle = nullptr;
+
+    vector<D3D12_CPU_DESCRIPTOR_HANDLE> rtvHandleVector(numRtv);
+    if (numRtv > 0)
+    {
+        const auto rt = renderTargets.begin();
+        UINT mipLevel = rt->mipLevel;
+        width = rt->renderTexture->GetWidth() >> mipLevel;
+        height = rt->renderTexture->GetHeight() >> mipLevel;
+
+        rtvHandles = rtvHandleVector.data();
+        size_t i = 0;
+        for (const auto& renderTarget : renderTargets)
+        {
+            const DescriptorData& descriptorData = renderTarget.renderTexture->GetRtvDescriptorData();
+            CD3DX12_CPU_DESCRIPTOR_HANDLE cpuHandle = descriptorData.CPUHandle;
+            cpuHandle.Offset(renderTarget.renderTexture->GetMipCount() * renderTarget.depthSlice + renderTarget.mipLevel,
+                descriptorData.IncrementSize);
+            rtvHandleVector[i++] = cpuHandle;
+        }
+    }
+
+    CD3DX12_CPU_DESCRIPTOR_HANDLE cpuHandle;
+    if (depthStencilTarget.renderTexture)
+    {
+        const DescriptorData& descriptorData = depthStencilTarget.renderTexture->GetRtvDescriptorData();
+        cpuHandle = descriptorData.CPUHandle;
+        cpuHandle.Offset(depthStencilTarget.renderTexture->GetMipCount() * depthStencilTarget.depthSlice + depthStencilTarget.mipLevel,
+            descriptorData.IncrementSize);
+        dsvHandle = &cpuHandle;
+
+        if (width == 0)
+        {
+            width = depthStencilTarget.renderTexture->GetWidth() >> depthStencilTarget.mipLevel;
+            height = depthStencilTarget.renderTexture->GetHeight() >> depthStencilTarget.mipLevel;
+        }
+    }
+
+    D3D12_VIEWPORT Viewport({ 0.0f, 0.0f, (float)(width), (float)(height), 0.0f, 1.0f });
+    D3D12_RECT ScissorRect({ 0, 0, (LONG)width, (LONG)height });
+    commandList->RSSetViewports(1, &Viewport);
+    commandList->RSSetScissorRects(1, &ScissorRect);
+
+    commandList->OMSetRenderTargets(numRtv, rtvHandles, false, dsvHandle);
+}
+
 void RenderTexture::Clear(ID3D12GraphicsCommandList* commandList, UINT depthSlice, UINT mipLevel)
 {
     CD3DX12_CPU_DESCRIPTOR_HANDLE cpuHandle = mRtvDescriptorData.CPUHandle;

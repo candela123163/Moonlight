@@ -1,11 +1,13 @@
 #include  "StaticSamplers.hlsli"
 #include "Constant.hlsli"
+#include "Util.hlsli"
+
+Texture2D _2DMaps[] : register(t0);
 
 DEFINE_OBJ_CONSTANT(b0)
 DEFINE_MATERIAL_CONSTANT(b1)
 DEFINE_CAMERA_CONSTANT(b2)
 
-Texture2D _2DMaps[] : register(t0);
 
 struct VertexIn
 {
@@ -41,12 +43,25 @@ VertexOut vs(VertexIn vin)
     return vout;
 }
 
-float4 ps(VertexOut pin) : SV_TARGET
+struct PSOut
 {
-    pin.normalV = normalize(pin.normalV);
+    float4 normal : SV_Target0;
+    float2 motion : SV_Target1;
+};
 
+
+PSOut ps(VertexOut pin)
+{
     float alpha = (_2DMaps[_AlbedoMapIndex].Sample(_SamplerAnisotropicWrap, pin.uv) * _AlbedoFactor).a;
     clip(alpha - 0.5f);
     
-    return float4(pin.normalV, 1.0f);
+    PSOut psout;
+    
+    psout.normal = float4(EncodeNormal(normalize(pin.normalV)), 1.0f);
+
+    psout.motion = float2(0.3, 0.8);
+    
+    
+    
+    return psout;
 }

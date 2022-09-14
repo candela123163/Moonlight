@@ -2,7 +2,7 @@
 
 Texture2D _2DMaps[] : register(t0, space0);
 Texture2D<float> _AOMap : register(t0, space1);
-RWTexture2D<float> _Output : register(u0);
+RWTexture2D<float4> _Output : register(u0);
 
 cbuffer BlurConstant : register(b0)
 {
@@ -33,9 +33,9 @@ void SetCache(int cacheIdx, int2 xy)
 {
     _CacheAO[cacheIdx] = _AOMap[xy].r;
     
-    xy = (int) round(xy * _NormalDepthSampleScale);
+    xy = (int2) round(xy * _NormalDepthSampleScale);
     _CacheDepth[cacheIdx] = _2DMaps[_DepthMapIndex][xy].r;
-    _CacheNormal[cacheIdx] = _2DMaps[_NormalMapIndex][xy].xyz;
+    _CacheNormal[cacheIdx] = DecodeNormal(_2DMaps[_NormalMapIndex][xy].rgb);
 }
 
 
@@ -44,14 +44,13 @@ void XBlur_cs(
     int3 groupThreadID : SV_GroupThreadID, 
     int3 dispatchThreadID : SV_DispatchThreadID)
 {
-    
-    if(groupThreadID.x < _BlurRadius)
+    if (groupThreadID.x < _BlurRadius)
     {
         int x = max(0, dispatchThreadID.x - _BlurRadius);
         int2 xy = int2(x, dispatchThreadID.y);
         SetCache(groupThreadID.x, xy);
     }
-    if(groupThreadID.x >= GROUP_SIZE - _BlurRadius)
+    if (groupThreadID.x >= GROUP_SIZE - _BlurRadius)
     {
         int x = min(_MapWidth - 1, dispatchThreadID.x + _BlurRadius);
         int2 xy = int2(x, dispatchThreadID.y);
@@ -80,7 +79,7 @@ void XBlur_cs(
         float weight =
             GaussianFilter(Square(center - neighbor), _RangeSigma) *
             GaussianFilter(Square(centerDepth - neighborDepth), _DepthSigma) *
-            GaussianFilter(acos(dot(centerNormal, neighborNormal)), _NormalSigma);
+            GaussianFilter(saturate(dot(centerNormal, neighborNormal)), _NormalSigma);
         
         bluredAO += ao * weight;
         totalWeight += weight;
@@ -93,7 +92,7 @@ void XBlur_cs(
 void YBlur_cs(
     int3 groupThreadID : SV_GroupThreadID,
     int3 dispatchThreadID : SV_DispatchThreadID)
-{
+{   
     if (groupThreadID.y < _BlurRadius)
     {
         int y = max(0, dispatchThreadID.y - _BlurRadius);
@@ -128,7 +127,7 @@ void YBlur_cs(
         float weight =
             GaussianFilter(Square(center - neighbor), _RangeSigma) *
             GaussianFilter(Square(centerDepth - neighborDepth), _DepthSigma) *
-            GaussianFilter(acos(dot(centerNormal, neighborNormal)), _NormalSigma);
+            GaussianFilter(saturate(dot(centerNormal, neighborNormal)), _NormalSigma);
         
         bluredAO += ao * weight;
         totalWeight += weight;

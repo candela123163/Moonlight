@@ -37,14 +37,14 @@ LumaNeighbor GetNeighbor(float2 uv)
 {
     LumaNeighbor neighbor;
     neighbor.m = GetLuma(uv);
-    neighbor.n = GetLuma(uv, 0.0, 1.0);
+    neighbor.n = GetLuma(uv, 0.0, -1.0);
     neighbor.e = GetLuma(uv, 1.0, 0.0);
-    neighbor.s = GetLuma(uv, 0.0, -1.0);
+    neighbor.s = GetLuma(uv, 0.0, 1.0);
     neighbor.w = GetLuma(uv, -1.0, 0.0);
-    neighbor.ne = GetLuma(uv, 1.0, 1.0);
-    neighbor.se = GetLuma(uv, 1.0, -1.0);
-    neighbor.sw = GetLuma(uv, -1.0, -1.0);
-    neighbor.nw = GetLuma(uv, -1.0, 1.0);
+    neighbor.ne = GetLuma(uv, 1.0, -1.0);
+    neighbor.se = GetLuma(uv, 1.0, 1.0);
+    neighbor.sw = GetLuma(uv, -1.0, 1.0);
+    neighbor.nw = GetLuma(uv, -1.0, -1.0);
 
     neighbor.highest = max(max(max(max(neighbor.m, neighbor.n), neighbor.e), neighbor.s), neighbor.w);
     neighbor.lowest = min(min(min(min(neighbor.m, neighbor.n), neighbor.e), neighbor.s), neighbor.w);
@@ -72,7 +72,7 @@ Edge GetEdge(LumaNeighbor neighbor)
     float lumaPositive, lumaNegative;
     if(edge.isHorizontal)
     {
-        edge.pixelStep = _TexelSize.y;
+        edge.pixelStep = -_TexelSize.y;
         lumaPositive = neighbor.n;
         lumaNegative = neighbor.s;
     }
@@ -117,7 +117,7 @@ float GetSubPixelBlending(LumaNeighbor neighbor)
     return filter * filter * _SubPixelBlending;
 }
 
-#define FXAA_QUALITY_MEDIUM
+//#define FXAA_QUALITY_MEDIUM
 
 #if defined(FXAA_QUALITY_LOW)
     #define EXTRA_EDGE_STEPS 3
@@ -147,7 +147,7 @@ float GetEdgeBlending(LumaNeighbor neighbor, Edge edge, float2 uv)
     else
     {
         edgeUV.x += 0.5f * edge.pixelStep;
-        uvStep.y = _TexelSize.y;
+        uvStep.y = -_TexelSize.y;
     }
     
     float edgeLuma = 0.5f * (neighbor.m + edge.peakLuma);
@@ -179,8 +179,8 @@ float GetEdgeBlending(LumaNeighbor neighbor, Edge edge, float2 uv)
     for (int j = 0; j < EXTRA_EDGE_STEPS && !atEndN; j++)
     {
         uvN -= uvStep * edgeStepSizes[j];
-        float lumaDeltaN = GetLuma(uvN) - edgeLuma;
-        bool atEndN = abs(lumaDeltaN) >= edgeThreshold;
+        lumaDeltaN = GetLuma(uvN) - edgeLuma;
+        atEndN = abs(lumaDeltaN) >= edgeThreshold;
     }
     if(!atEndN)
     {
@@ -195,13 +195,13 @@ float GetEdgeBlending(LumaNeighbor neighbor, Edge edge, float2 uv)
     }
     else
     {
-        distanceToEndP = uvP.y - uv.y;
-        distanceToEndN = uv.y - uvN.y;
+        distanceToEndP = uv.y - uvP.y;
+        distanceToEndN = uvN.y - uv.y;
     }
     
     float distanceToNearestEnd;
     int signDelta;
-    if(distanceToEndP < distanceToEndN)
+    if(distanceToEndP <= distanceToEndN)
     {
         distanceToNearestEnd = distanceToEndP;
         signDelta = sign(lumaDeltaP);
@@ -212,7 +212,7 @@ float GetEdgeBlending(LumaNeighbor neighbor, Edge edge, float2 uv)
         signDelta = sign(lumaDeltaN);
     }
 
-    if (signDelta == sign(neighbor.m - edge.peakLuma))
+    if (signDelta * sign(neighbor.m - edgeLuma) >= 0)
     {
         return 0.0f;
     }
@@ -229,17 +229,16 @@ void FXAA_cs(int3 dispatchThreadID : SV_DispatchThreadID)
     
     int2 xy = dispatchThreadID.xy;
     float2 uv = xy * _TexelSize;
-    
     LumaNeighbor neighbor = GetNeighbor(uv);
     
     if (!CanSkipFXAA(neighbor))
     {
         Edge edge = GetEdge(neighbor);
         float blending = max(
-            GetSubPixelBlending(neighbor),
-            GetEdgeBlending(neighbor, edge, uv)
-        );
-                
+                GetSubPixelBlending(neighbor),
+                GetEdgeBlending(neighbor, edge, uv)
+            );
+        
         if (edge.isHorizontal)
         {
             uv.y += blending * edge.pixelStep;
@@ -249,8 +248,5 @@ void FXAA_cs(int3 dispatchThreadID : SV_DispatchThreadID)
             uv.x += blending * edge.pixelStep;
         }
     }
-
     _Output[xy] = _ColorMap.SampleLevel(_SamplerLinearClamp, uv, 0);
-    
-
 }

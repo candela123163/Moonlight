@@ -20,23 +20,11 @@ public:
 private:
     void CreateResource(const GraphicContext& context);
 
-    void CreateNormalSignaturePSO(const GraphicContext& context);
     void CreateSSAOSignaturePSO(const GraphicContext& context);
     void CreateBlurSignaturePSO(const GraphicContext& context);
 
-    void DrawNormalDepth(const GraphicContext& context);
     void DrawSSAO(const GraphicContext& context);
     void BlurSSAO(const GraphicContext& context);
-
-    enum class NormalRootSignatureParam
-    {
-        ObjectConstant = 0,
-        MaterialConstant = 1,
-        CameraConstant = 2,
-        Texture2DTable = 3,
-
-        COUNT = 4
-    };
 
     enum class SSAORootSignatureParam
     {
@@ -85,22 +73,20 @@ private:
     };
 
 private:
-    ComPtr<ID3D12RootSignature> mNormalDepthSignature = nullptr;
     ComPtr<ID3D12RootSignature> mSSAOSignature = nullptr;
     ComPtr<ID3D12RootSignature> mBlurSignature = nullptr;
 
-    ComPtr<ID3D12PipelineState> mNormalDepthPSO = nullptr;
     ComPtr<ID3D12PipelineState> mSSAOPSO = nullptr;
     ComPtr<ID3D12PipelineState> mBlurXPSO = nullptr;
     ComPtr<ID3D12PipelineState> mBlurYPSO = nullptr;
 
     // this pass own these resources
     // since there is no need to be accessed in other pass
-    std::unique_ptr<RenderTexture> mNormalMap = nullptr;
     std::unique_ptr<RenderTexture> mSSAOMap = nullptr;
     std::unique_ptr<UnorderAccessTexture> mSSAOBlurXMap = nullptr;
-
+    
     // resource container own this resource
+    RenderTexture* mNormalMap = nullptr;
     UnorderAccessTexture* mSSAOBlurYMap = nullptr;
 
     UINT mSSAOWidth, mSSAOHeight;

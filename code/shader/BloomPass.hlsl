@@ -2,8 +2,6 @@
 
 #define GROUP_SIZE 256
 
-#define FLOAT16_MAX  65500
-
 Texture2D<float4> _BloomChain : register(t0);
 Texture2D<float4> _InputMap : register(t1);
 RWTexture2D<float4> _Output : register(u0);
@@ -152,11 +150,6 @@ float3 NeutralTonemap(float3 x)
     x /= whiteClip.xxx;
 
     return x;
-}
-
-float4 ClampHDR(float4 color, float scale)
-{
-    return clamp(color, 0.0f, scale * FLOAT16_MAX);
 }
 
 
