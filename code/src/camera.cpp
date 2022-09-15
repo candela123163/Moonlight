@@ -19,14 +19,12 @@ void Camera::SetPosition(float x, float y, float z)
 {
 	mPosition = XMFLOAT3(x, y, z);
 	mViewDirty = true;
-	MarkConstantDirty();
 }
 
 void Camera::SetPosition(const XMFLOAT3& v)
 {
 	mPosition = v;
 	mViewDirty = true;
-	MarkConstantDirty();
 }
 
 XMVECTOR Camera::GetRight() const
@@ -123,7 +121,6 @@ void Camera::SetLens(float fovY, float aspect, float zn, float zf)
 	mProj = XMMatrixPerspectiveFovLH(mFovY, mAspect, mFarZ, mNearZ);
 #endif
 
-	MarkConstantDirty();
 }
 
 void Camera::LookAt(FXMVECTOR pos, FXMVECTOR target, FXMVECTOR worldUp)
@@ -138,7 +135,6 @@ void Camera::LookAt(FXMVECTOR pos, FXMVECTOR target, FXMVECTOR worldUp)
 	XMStoreFloat3(&mUp, U);
 
 	mViewDirty = true;
-	MarkConstantDirty();
 }
 
 void Camera::LookAt(const XMFLOAT3& pos, const XMFLOAT3& target, const XMFLOAT3& up)
@@ -150,7 +146,6 @@ void Camera::LookAt(const XMFLOAT3& pos, const XMFLOAT3& target, const XMFLOAT3&
 	LookAt(P, T, U);
 
 	mViewDirty = true;
-	MarkConstantDirty();
 }
 
 XMMATRIX Camera::GetView() const
@@ -184,7 +179,6 @@ void Camera::Strafe(float d)
 	XMStoreFloat3(&mPosition, XMVectorMultiplyAdd(s, r, p));
 
 	mViewDirty = true;
-	MarkConstantDirty();
 }
 
 void Camera::Walk(float d)
@@ -196,7 +190,6 @@ void Camera::Walk(float d)
 	XMStoreFloat3(&mPosition, XMVectorMultiplyAdd(s, l, p));
 
 	mViewDirty = true;
-	MarkConstantDirty();
 }
 
 void Camera::VerticalShift(float d)
@@ -208,7 +201,6 @@ void Camera::VerticalShift(float d)
 	XMStoreFloat3(&mPosition, XMVectorMultiplyAdd(s, up, p));
 
 	mViewDirty = true;
-	MarkConstantDirty();
 }
 
 void Camera::Pitch(float angle)
@@ -221,7 +213,6 @@ void Camera::Pitch(float angle)
 	XMStoreFloat3(&mLook, XMVector3TransformNormal(XMLoadFloat3(&mLook), R));
 
 	mViewDirty = true;
-	MarkConstantDirty();
 }
 
 void Camera::RotateY(float angle)
@@ -235,7 +226,6 @@ void Camera::RotateY(float angle)
 	XMStoreFloat3(&mLook, XMVector3TransformNormal(XMLoadFloat3(&mLook), R));
 
 	mViewDirty = true;
-	MarkConstantDirty();
 }
 
 void Camera::UpdateViewMatrix()
@@ -249,28 +239,43 @@ void Camera::UpdateViewMatrix()
 		XMVECTOR P = XMLoadFloat3(&mPosition);
 
 		mView = XMMatrixLookToLH(P, L, U);
-		
-		mInvView = XMMatrixInverse(get_rvalue_ptr(XMMatrixDeterminant(mView)), mView);
+		XMVECTOR determinant;
+		mInvView = XMMatrixInverse(&determinant, mView);
 	}
 }
 
+
 void Camera::UpdateConstant(const GraphicContext& context)
 {
-	if (!StillDirty())
-		return;
-	mDirtyCount--;
 	UpdateViewMatrix();
 
 	CameraConstant cameraConstant;
 
 	XMMATRIX view = GetView();
-	XMMATRIX proj = GetProj();
+	XMMATRIX unjitteredProj = GetProj();
+
+	// jitter
+	int jitterIndex = 1 + (context.frameCount % mJitterPeriod);
+	XMFLOAT2 jitter = XMFLOAT2(
+		(GetHalton(jitterIndex, 2) - 0.5) / context.screenWidth,
+		(GetHalton(jitterIndex, 3) - 0.5) / context.screenHeight
+	);
+	XMMATRIX proj = unjitteredProj;
+	proj.r[2].m128_f32[0] = jitter.x * 2.0;
+	proj.r[2].m128_f32[1] = jitter.y * -2.0;
 
 	XMVECTOR determinant;
 	XMMATRIX viewProj = XMMatrixMultiply(view, proj);
 	XMMATRIX invView = XMMatrixInverse(&determinant, view);
 	XMMATRIX invProj = XMMatrixInverse(&determinant, proj);
 	XMMATRIX invViewProj = XMMatrixInverse(&determinant, viewProj);
+	
+	XMMATRIX unjitteredViewProj = XMMatrixMultiply(view, unjitteredProj);
+
+	if (context.frameCount == 0) {
+		mUnjitteredPreViewProj = unjitteredViewProj;
+	}
+	
 
 	XMStoreFloat4x4(&cameraConstant.View, XMMatrixTranspose(view));
 	XMStoreFloat4x4(&cameraConstant.Proj, XMMatrixTranspose(proj));
@@ -280,10 +285,16 @@ void Camera::UpdateConstant(const GraphicContext& context)
 	XMStoreFloat4x4(&cameraConstant.InvViewProj, XMMatrixTranspose(invViewProj));
 
 	cameraConstant.EyePosW = XMFLOAT4(mPosition.x, mPosition.y, mPosition.z, 1.0f);
-
 	cameraConstant.NearFar = XMFLOAT4(mNearZ, mFarZ, 0.0, 0.0);
 
+	XMStoreFloat4x4(&cameraConstant.UnjitteredViewProj, XMMatrixTranspose(unjitteredViewProj));
+	XMStoreFloat4x4(&cameraConstant.UnjitteredPreViewProj, XMMatrixTranspose(mUnjitteredPreViewProj));
+	cameraConstant.Jitter = jitter;
+
 	context.frameResource->ConstantCamera->CopyData(cameraConstant);
+
+	// update last frame matrix
+	mUnjitteredPreViewProj = unjitteredViewProj;
 }
 
 void Camera::SetShadowMaxDistance(float distance)

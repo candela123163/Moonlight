@@ -79,6 +79,7 @@ private:
     bool      mAppPaused = false;
 
     Timer mTimer;
+    UINT64 mTotalFrame = 0;
 
     ComPtr<IDXGIFactory4> mdxgiFactory;
     ComPtr<IDXGISwapChain> mSwapChain;
@@ -92,7 +93,6 @@ private:
 
     std::unique_ptr<DescriptorHeap> mDescriptorHeap;
     
-
     static const int mSwapChainBufferCount = SWAP_CHAIN_COUNT;
     int mCurrBackBufferIndex = 0;
     ComPtr<ID3D12Resource> mSwapChainBuffer[mSwapChainBufferCount];
@@ -101,7 +101,6 @@ private:
     DescriptorData mRtvDescriptorData; 
 
     std::unique_ptr<RenderTexture> mDepthStencilTarget;
-
 
     D3D12_VIEWPORT mScreenViewport;
     D3D12_RECT mScissorRect;

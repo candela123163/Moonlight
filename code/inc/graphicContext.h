@@ -17,6 +17,7 @@ struct GraphicContext
     ID3D12GraphicsCommandList* commandList;
     ID3D12CommandQueue* commandQueue;
     Timer* timer;
+    UINT64 frameCount;
     DescriptorHeap* descriptorHeap;
     FrameResources* frameResource;
     DXGI_FORMAT backBufferFormat;

@@ -168,3 +168,18 @@ XMVECTOR GetCubeFaceNormal(UINT face)
     return looks[face];
 }
 
+double GetHalton(int index, int radix)
+{
+    double result = 0;
+    double fraction = 1.0 / (double)radix;
+
+    while (index > 0)
+    {
+        result += (double)(index % radix) * fraction;
+
+        index /= radix;
+        fraction /= (double)radix;
+    }
+
+    return result;
+}

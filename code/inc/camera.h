@@ -1,6 +1,7 @@
 #pragma once
 #include "stdafx.h"
 #include "globals.h"
+#include "frameResource.h"
 
 struct GraphicContext;
 
@@ -59,11 +60,6 @@ public:
 	// After modifying camera position/orientation, call to rebuild the view matrix.
 	void UpdateViewMatrix();
 
-	// determine whether to update camera constant
-	bool StillDirty() const { return mDirtyCount > 0; }
-
-	void MarkConstantDirty() { mDirtyCount = FRAME_COUNT; }
-
 	void UpdateConstant(const GraphicContext& context);
 
 	// shadow related
@@ -109,13 +105,14 @@ private:
 	DirectX::XMMATRIX mProj;
 	DirectX::BoundingFrustum mFrustum;
 
-	// determine whether to update constant buffer
-	UINT mDirtyCount = FRAME_COUNT;
-
 	// shadow related
 	float mMaxShadowDistance = 10.0f;
 	std::array<float, MAX_CASCADE_COUNT> mShadowCascadeRatio;
 	std::array<float, MAX_CASCADE_COUNT> mShadowCascadeDistance;
 	int mCascadeCount;
 	DirectX::BoundingFrustum mShadowCullFrustum;
+
+	// jitter
+	const int mJitterPeriod = 8;
+	DirectX::XMMATRIX mUnjitteredPreViewProj;
 };

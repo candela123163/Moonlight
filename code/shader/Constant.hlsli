@@ -11,6 +11,7 @@ cbuffer ObjectConstant : register(bx)       \
 {                                           \
     float4x4 _World;                        \
     float4x4 _InvTransposeWorld;            \
+    float4x4 _PreWorld;                     \
 }                                         
 
 #define DEFINE_MATERIAL_CONSTANT(bx)        \
@@ -39,6 +40,10 @@ cbuffer CameraConstant : register(bx)       \
     float4x4 _InvViewProj;                  \
     float4 _EyePosW;                        \
     float4 _NearFar;                        \
+    float4x4 _UnjitteredViewProj;           \
+    float4x4 _UnjitteredPreViewProj;        \
+                                            \
+    float2 _Jitter;                         \
 }
 
 struct PointLight

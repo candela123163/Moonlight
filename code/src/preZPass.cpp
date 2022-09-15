@@ -154,6 +154,10 @@ void PreZPass::DrawPass(const GraphicContext& context)
 
         instance->GetMesh()->Draw(context.commandList);
     }
+
+    mNormalMap->TransitionTo(context.commandList, TextureState::Read);
+
+    mMotionMap->TransitionTo(context.commandList, TextureState::Read);
 }
 
 void PreZPass::ReleasePass(const GraphicContext& context)

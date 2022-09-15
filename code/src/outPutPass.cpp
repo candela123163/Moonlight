@@ -61,14 +61,14 @@ void OutputPass::PreparePass(const GraphicContext& context)
     basePsoDesc.RTVFormats[0] = context.backBufferFormat;
     basePsoDesc.SampleDesc.Count = 1;
     basePsoDesc.SampleDesc.Quality = 0;
-    basePsoDesc.DSVFormat = context.depthStencilFormat;
+    basePsoDesc.DSVFormat = DXGI_FORMAT_UNKNOWN;
 
     ThrowIfFailed(context.device->CreateGraphicsPipelineState(&basePsoDesc, IID_PPV_ARGS(mPSO.GetAddressOf())));
 }
 
 void OutputPass::PreprocessPass(const GraphicContext& context)
 {
-    size_t rtKey = hash<string>()("FXAA");
+    size_t rtKey = hash<string>()("Bloom");
     mInputRT = Globals::UATextureContainer.Get(rtKey);
 }
 

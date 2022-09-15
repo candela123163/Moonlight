@@ -10,6 +10,7 @@
 #include "shadowPass.h"
 #include "preZPass.h"
 #include "SSAOPass.h"
+#include "temporalAAPass.h"
 #include "bloomPass.h"
 #include "FXAAPass.h"
 #include "outputPass.h"
@@ -74,6 +75,7 @@ int GameApp::Run()
 			{
 				Update();
 				Draw();
+				mTotalFrame++;
 			}
 			else
 			{
@@ -412,6 +414,7 @@ void GameApp::CreateGraphicContext()
 		mCommandList.Get(),
 		mCommandQueue.Get(),
 		&mTimer,
+		mTotalFrame,
 		mDescriptorHeap.get(),
 		CurrentFrameResource(),
 		mBackBufferFormat,
@@ -425,8 +428,8 @@ void GameApp::CreateGraphicContext()
 
 void GameApp::UpdateGraphicContext()
 {
-	// just update current frame resource
 	mGraphicContext.frameResource = CurrentFrameResource();
+	mGraphicContext.frameCount = mTotalFrame;
 }
 
 void GameApp::PreparePasses()
@@ -438,8 +441,9 @@ void GameApp::PreparePasses()
 	mPasses.push_back(make_unique<SSAOPass>());
 	mPasses.push_back(make_unique<OpaqueLitPass>());
 	mPasses.push_back(make_unique<SkyboxPass>());
+	mPasses.push_back(make_unique<TAAPass>());
 	mPasses.push_back(make_unique<BloomPass>());
-	mPasses.push_back(make_unique<FXAAPass>());
+	//mPasses.push_back(make_unique<FXAAPass>());
 	mPasses.push_back(make_unique<OutputPass>());
 
 #ifdef _DEBUG

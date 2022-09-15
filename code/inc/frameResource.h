@@ -7,6 +7,7 @@ CBUFFER ObjectConstant
 {
     DirectX::XMFLOAT4X4 World;
     DirectX::XMFLOAT4X4 InverseTransposedWorld;
+    DirectX::XMFLOAT4X4 PreWorld;
 };
 
 
@@ -36,6 +37,10 @@ CBUFFER CameraConstant
     DirectX::XMFLOAT4 EyePosW;
     // camera (Znear, Zfar, null, null)
     DirectX::XMFLOAT4 NearFar;
+
+    DirectX::XMFLOAT4X4 UnjitteredViewProj;
+    DirectX::XMFLOAT4X4 UnjitteredPreViewProj;
+    DirectX::XMFLOAT2 Jitter;
 };
 
 

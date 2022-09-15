@@ -26,6 +26,7 @@ void Instance::UpdateConstant(const GraphicContext& context)
     ObjectConstant objectConstant;
     
     XMStoreFloat4x4(&objectConstant.World, XMMatrixTranspose(mTransform));
+    XMStoreFloat4x4(&objectConstant.PreWorld, XMMatrixTranspose(mTransform));
     XMStoreFloat4x4(&objectConstant.InverseTransposedWorld, mInvTransform);
     context.frameResource->ConstantObject->CopyData(objectConstant, mInstanceID);
 }

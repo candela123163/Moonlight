@@ -19,7 +19,8 @@ struct VertexIn
 struct VertexOut
 {
     float4 posH : SV_POSITION;
-    float3 posW : VAR_POSITION_W;
+    float4 unjitteredPosH : VAR_POSITION_W;
+    float4 preUnjitteredPosH : VAR_PRE_POSITION_W;
     float3 normalV : VAR_NORMAL_V;
     float2 uv : VAR_TEXCOORD;
 };
@@ -30,8 +31,11 @@ VertexOut vs(VertexIn vin)
     VertexOut vout;
     
     float4 posW = mul(float4(vin.posL, 1.0f), _World);
+    float4 prePosW = mul(float4(vin.posL, 1.0f), _PreWorld);
+    
     vout.posH = mul(posW, _ViewProj);
-    vout.posW = posW.xyz;
+    vout.unjitteredPosH = mul(posW, _UnjitteredViewProj);
+    vout.preUnjitteredPosH = mul(prePosW, _UnjitteredPreViewProj);
     
     float3 normalW = mul(vin.normalL, (float3x3) _InvTransposeWorld);
 
@@ -59,9 +63,12 @@ PSOut ps(VertexOut pin)
     
     psout.normal = float4(EncodeNormal(normalize(pin.normalV)), 1.0f);
 
-    psout.motion = float2(0.3, 0.8);
+    pin.unjitteredPosH /= pin.unjitteredPosH.w;
+    float2 unjitteredUV = NDCXYToUV(pin.unjitteredPosH.xy);
+    pin.preUnjitteredPosH /= pin.preUnjitteredPosH.w;
+    float2 preUnjitteredUV = NDCXYToUV(pin.preUnjitteredPosH.xy);
     
-    
-    
+    psout.motion = unjitteredUV - preUnjitteredUV;
+        
     return psout;
 }

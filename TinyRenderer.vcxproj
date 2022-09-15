@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -179,6 +179,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="code\src\temporalAAPass.cpp" />
     <ClCompile Include="code\src\texture.cpp" />
     <ClCompile Include="code\src\timer.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Use</PrecompiledHeader>
@@ -212,6 +213,7 @@
     <ClInclude Include="code\inc\shadowPass.h" />
     <ClInclude Include="code\inc\skyBoxPass.h" />
     <ClInclude Include="code\inc\stdafx.h" />
+    <ClInclude Include="code\inc\temporalAAPass.h" />
     <ClInclude Include="code\inc\texture.h" />
     <ClInclude Include="code\inc\timer.h" />
     <ClInclude Include="code\inc\util.h" />

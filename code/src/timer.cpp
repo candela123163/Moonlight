@@ -51,6 +51,7 @@ float Timer::DeltaTime() const
 	return (float)mDeltaTime;
 }
 
+
 void Timer::Reset()
 {
 	__int64 currTime;

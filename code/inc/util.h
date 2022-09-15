@@ -144,3 +144,5 @@ bool Intersects(
 }
 
 #define CBUFFER struct alignas(16)
+
+double GetHalton(int index, int radix);

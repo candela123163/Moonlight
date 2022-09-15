@@ -43,12 +43,14 @@ struct PointLight
     DirectX::XMMATRIX GetInvViewProject(UINT face) const
     {
         DirectX::XMMATRIX viewProject = GetViewProject(face);
-        return XMMatrixInverse(get_rvalue_ptr(XMMatrixDeterminant(viewProject)), viewProject);
+        DirectX::XMVECTOR determinant;
+        return XMMatrixInverse(&determinant, viewProject);
     }
 
     DirectX::XMMATRIX GetInvView(UINT face) const
     {
-        return XMMatrixInverse(get_rvalue_ptr(XMMatrixDeterminant(Views[(int)face])), Views[(int)face]);
+        DirectX::XMVECTOR determinant;
+        return XMMatrixInverse(&determinant, Views[(int)face]);
     }
 
 };

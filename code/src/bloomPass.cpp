@@ -13,7 +13,7 @@ void BloomPass::PreparePass(const GraphicContext& context)
 
 void BloomPass::PreprocessPass(const GraphicContext& context)
 {
-    size_t rtKey = hash<string>()("OpaqueRT");
+    size_t rtKey = hash<string>()("TAAMap");
     mInputRT = Globals::RenderTextureContainer.Get(rtKey);
 
     mBloomConstant->CopyData(mBloomParam);
