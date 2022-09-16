@@ -54,7 +54,10 @@ void GUIPass::DrawPass(const GraphicContext& context)
 
     ImGui::Text("TAA");
     ImGui::Checkbox("TAA Enable", &option->TAAEnable);
-
+    ImGui::DragFloat("Clip Lower Bound", &option->TAAClipBound.x, 0.005f, 0.75f, 1.5f);
+    ImGui::DragFloat("Clip Upper Bound", &option->TAAClipBound.y, 0.005f, 1.5f, 8.0f);
+    ImGui::DragFloat("Motion Weight", &option->TAAMotionWeight, 10.0f, 100.0f, 5000.0f);
+    ImGui::DragFloat("Sharpness", &option->TAASharpness, 0.001f, 0.0f, 0.5f);
 
     ImGui::End();
 

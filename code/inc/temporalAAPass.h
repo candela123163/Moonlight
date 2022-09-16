@@ -34,6 +34,20 @@ private:
         int MotionMapIndex;
 
         DirectX::XMFLOAT2 TexelSize;
+        DirectX::XMFLOAT2 HistoryClipBound;
+
+        float MotionWeightFactor;
+        float Sharpness;
+    };
+
+    struct TAAPassData : public PassData
+    {
+        std::unique_ptr<UploadBuffer<TAAConstant, true>> ssaoConstant;
+
+        TAAPassData(ID3D12Device* device)
+        {
+            ssaoConstant = std::make_unique<UploadBuffer<TAAConstant, true>>(device);
+        }
     };
 
 private:
@@ -43,5 +57,5 @@ private:
     std::unique_ptr<RenderTexture> mHistory;
     RenderTexture* mTAAOut;
 
-    std::unique_ptr<UploadBuffer<TAAConstant, true>> mTAAConstant;
+    TAAConstant mTAAParam;
 };

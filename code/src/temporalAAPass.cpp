@@ -8,8 +8,6 @@ using namespace DirectX;
 void TAAPass::PreparePass(const GraphicContext& context)
 {
     // create resources
-    mTAAConstant = make_unique<UploadBuffer<TAAConstant, true>>(context.device);
-
     mHistory = make_unique<RenderTexture>(
         context.device, context.descriptorHeap,
         context.screenWidth, context.screenHeight,
@@ -98,16 +96,19 @@ void TAAPass::PreprocessPass(const GraphicContext& context)
     RenderTexture* frameDepth = GameApp::GetApp()->GetDepthStencilTarget();
     RenderTexture* motion = Globals::RenderTextureContainer.Get(hash<string>()("MotionMap"));
 
-    TAAConstant taaParam;
-    taaParam.TexelSize = XMFLOAT2(1.0 / context.screenWidth, 1.0 / context.screenHeight);
-    taaParam.FrameColorMapIndex = frameColor->GetSrvDescriptorData().HeapIndex;
-    taaParam.FrameDepthMapIndex = frameDepth->GetSrvDescriptorData().HeapIndex;
-    taaParam.MotionMapIndex = motion->GetSrvDescriptorData().HeapIndex;
-    taaParam.HistoryColorMapIndex = mHistory->GetSrvDescriptorData().HeapIndex;
-
-    mTAAConstant->CopyData(taaParam);
+    mTAAParam.TexelSize = XMFLOAT2(1.0 / context.screenWidth, 1.0 / context.screenHeight);
+    mTAAParam.FrameColorMapIndex = frameColor->GetSrvDescriptorData().HeapIndex;
+    mTAAParam.FrameDepthMapIndex = frameDepth->GetSrvDescriptorData().HeapIndex;
+    mTAAParam.MotionMapIndex = motion->GetSrvDescriptorData().HeapIndex;
+    mTAAParam.HistoryColorMapIndex = mHistory->GetSrvDescriptorData().HeapIndex;
+    mTAAParam.HistoryClipBound = XMFLOAT2(1.25f, 6.0f);
+    mTAAParam.MotionWeightFactor = 3000.0f;
+    mTAAParam.Sharpness = 0.02f;
 
     context.renderOption->TAAEnable = true;
+    context.renderOption->TAAClipBound = mTAAParam.HistoryClipBound;
+    context.renderOption->TAAMotionWeight = mTAAParam.MotionWeightFactor;
+    context.renderOption->TAASharpness = mTAAParam.Sharpness;
 }
 
 void TAAPass::DrawPass(const GraphicContext& context)
@@ -137,8 +138,18 @@ void TAAPass::DrawPass(const GraphicContext& context)
     context.commandList->SetGraphicsRootConstantBufferView((int)RootSignatureParam::CameraConstant,
         context.frameResource->ConstantCamera->GetElementGPUAddress());
 
+    mTAAParam.HistoryClipBound = context.renderOption->TAAClipBound;
+    mTAAParam.MotionWeightFactor = context.renderOption->TAAMotionWeight;
+    mTAAParam.Sharpness = context.renderOption->TAASharpness;
+
+    TAAPassData* passData = dynamic_cast<TAAPassData*>(context.frameResource->GetOrCreate(this,
+        [&]() {
+        return make_unique<TAAPassData>(context.device);
+    }));
+    passData->ssaoConstant->CopyData(mTAAParam);
+
     context.commandList->SetGraphicsRootConstantBufferView((int)RootSignatureParam::TAAConstant,
-        mTAAConstant->GetElementGPUAddress());
+        passData->ssaoConstant->GetElementGPUAddress());
     
     context.commandList->IASetVertexBuffers(0, 0, nullptr);
     context.commandList->IASetIndexBuffer(nullptr);

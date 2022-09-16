@@ -9,8 +9,12 @@ cbuffer TAAConstant : register(b1)
     uint _FrameDepthMapIndex;
     uint _HistoryColorMapIndex;
     uint _MotionMapIndex;
-    
+        
     float2 _TexelSize;
+    float2 _HistoryClipBound;
+    
+    float _MotionWeightFactor;
+    float _Sharpness;
 }
 
 Texture2D _2DMaps[] : register(t0);
@@ -23,13 +27,9 @@ Texture2D _2DMaps[] : register(t0);
 #define TONE_BOUND 0.5
 #define EXPOSURE 10.0
 
-#define HISTORY_CLIP_LEFT 1.25
-#define HISTORY_CLIP_RIGHT 6.0
 #define HISTORY_RESOLVE_LEFT  0.05
 #define HISTORY_RESOLVE_RIGHT 0.15
-#define MOTION_WEIGHT_FACTOR 1000
 
-#define SHARPNESS 0.1
 
 float Luma(float3 color)
 {
@@ -169,7 +169,7 @@ float4 ps(PostProc_VSOut pin) : SV_Target
     float4 curColor = _2DMaps[_FrameColorMapIndex].SampleLevel(_SamplerLinearClamp, jitteredUV, 0).rgba;
     float2 motion = ReprojectColsestMotion(pin.uv);
     
-    float motionWeight = saturate(length(motion) * MOTION_WEIGHT_FACTOR);
+    float motionWeight = saturate(length(motion) * _MotionWeightFactor);
     
     float2 preUV = pin.uv - motion;
     
@@ -204,7 +204,7 @@ float4 ps(PostProc_VSOut pin) : SV_Target
     
     float3 mean = m1 / 9.0f;
     float3 stddev = sqrt(max(0.0f, m2 / 9.0f - mean * mean));
-    float extend = lerp(HISTORY_CLIP_LEFT, HISTORY_CLIP_RIGHT, 1.0f - motionWeight);
+    float extend = lerp(_HistoryClipBound.x, _HistoryClipBound.y, 1.0f - motionWeight);
     float3 minColor = mean - extend * stddev;
     float3 maxColor = mean + extend * stddev;
     minColor = min(minColor, filteredColor);
@@ -220,10 +220,14 @@ float4 ps(PostProc_VSOut pin) : SV_Target
     preColor.rgb = YCoCgToRGB(preColor.rgb);
     
     // sharpen
-    float3 highFrequence = 0.25f * (neighbors[0] + neighbors[2] + neighbors[6] + neighbors[8]) +
-                            0.5f * (neighbors[1] + neighbors[3] + neighbors[5] + neighbors[7]) -
+    float3 highFrequence = -0.25f * (neighbors[0] + neighbors[2] + neighbors[6] + neighbors[8]) -
+                            0.5f * (neighbors[1] + neighbors[3] + neighbors[5] + neighbors[7]) +
                             3.0f * neighbors[4];
-    curColor.rgb += highFrequence * SHARPNESS;
+    curColor.rgb += highFrequence * _Sharpness;
+    
+    //float3 corners = ((neighbors[0] + neighbors[2] + neighbors[6] + neighbors[8]) - neighbors[4]) * 2;
+    //curColor.rgb += (curColor.rgb - (corners * 0.166667)) * 2.718282 * _Sharpness;
+    
     
     curColor.rgb = Tonemap(curColor.rgb);
     float resolveFactor = lerp(HISTORY_RESOLVE_LEFT, HISTORY_RESOLVE_RIGHT, motionWeight);

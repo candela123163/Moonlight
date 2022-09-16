@@ -20,4 +20,7 @@ struct RenderOption
 
     // TAA
     bool TAAEnable;
+    DirectX::XMFLOAT2 TAAClipBound;
+    float TAAMotionWeight;
+    float TAASharpness;
 };
