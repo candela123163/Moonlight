@@ -14,6 +14,7 @@
 #include "bloomPass.h"
 #include "FXAAPass.h"
 #include "outputPass.h"
+#include "GUIPass.h"
 using namespace DirectX;
 using namespace std;
 
@@ -89,6 +90,9 @@ int GameApp::Run()
 
 bool GameApp::Initialize()
 {
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+
 	if (!InitMainWindow())
 		return false;
 
@@ -122,63 +126,71 @@ void GameApp::SetDefaultRenderTarget(bool writeColor , bool writeDepth )
 	mCommandList->OMSetRenderTargets(numRtv, rtvs, true, dsv);
 }
 
+extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
 LRESULT GameApp::MsgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-	switch (msg)
-	{
-		// WM_ACTIVATE is sent when the window is activated or deactivated.  
-		// We pause the game when the window is deactivated and unpause it 
-		// when it becomes active.  
-	case WM_ACTIVATE:
-		if (LOWORD(wParam) == WA_INACTIVE)
+	ImGui_ImplWin32_WndProcHandler(hwnd, msg, wParam, lParam);
+	auto& io = ImGui::GetIO();
+	if (!io.WantCaptureMouse && !io.WantCaptureKeyboard) {
+
+		switch (msg)
 		{
-			mAppPaused = true;
-			mTimer.Stop();
-		}
-		else
-		{
-			mAppPaused = false;
-			mTimer.Start();
-		}
-		return 0;
+			// WM_ACTIVATE is sent when the window is activated or deactivated.  
+			// We pause the game when the window is deactivated and unpause it 
+			// when it becomes active.  
+		case WM_ACTIVATE:
+			if (LOWORD(wParam) == WA_INACTIVE)
+			{
+				mAppPaused = true;
+				mTimer.Stop();
+			}
+			else
+			{
+				mAppPaused = false;
+				mTimer.Start();
+			}
+			return 0;
 
-		// WM_DESTROY is sent when the window is being destroyed.
-	case WM_DESTROY:
-		PostQuitMessage(0);
-		return 0;
-
-		// The WM_MENUCHAR message is sent when a menu is active and the user presses 
-		// a key that does not correspond to any mnemonic or accelerator key. 
-	case WM_MENUCHAR:
-		// Don't beep when we alt-enter.
-		return MAKELRESULT(0, MNC_CLOSE);
-
-		// Catch this message so to prevent the window from becoming too small.
-	case WM_GETMINMAXINFO:
-		((MINMAXINFO*)lParam)->ptMinTrackSize.x = 200;
-		((MINMAXINFO*)lParam)->ptMinTrackSize.y = 200;
-		return 0;
-
-	case WM_LBUTTONDOWN:
-	case WM_MBUTTONDOWN:
-	case WM_RBUTTONDOWN:
-		OnMouseDown(wParam, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
-		return 0;
-	case WM_LBUTTONUP:
-	case WM_MBUTTONUP:
-	case WM_RBUTTONUP:
-		OnMouseUp(wParam, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
-		return 0;
-	case WM_MOUSEMOVE:
-		OnMouseMove(wParam, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
-		return 0;
-	case WM_KEYUP:
-		if (wParam == VK_ESCAPE)
-		{
+			// WM_DESTROY is sent when the window is being destroyed.
+		case WM_DESTROY:
 			PostQuitMessage(0);
+			return 0;
+
+			// The WM_MENUCHAR message is sent when a menu is active and the user presses 
+			// a key that does not correspond to any mnemonic or accelerator key. 
+		case WM_MENUCHAR:
+			// Don't beep when we alt-enter.
+			return MAKELRESULT(0, MNC_CLOSE);
+
+			// Catch this message so to prevent the window from becoming too small.
+		case WM_GETMINMAXINFO:
+			((MINMAXINFO*)lParam)->ptMinTrackSize.x = 200;
+			((MINMAXINFO*)lParam)->ptMinTrackSize.y = 200;
+			return 0;
+
+		case WM_LBUTTONDOWN:
+		case WM_MBUTTONDOWN:
+		case WM_RBUTTONDOWN:
+			OnMouseDown(wParam, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
+			return 0;
+		case WM_LBUTTONUP:
+		case WM_MBUTTONUP:
+		case WM_RBUTTONUP:
+			OnMouseUp(wParam, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
+			return 0;
+		case WM_MOUSEMOVE:
+			OnMouseMove(wParam, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
+			return 0;
+		case WM_KEYUP:
+			if (wParam == VK_ESCAPE)
+			{
+				PostQuitMessage(0);
+			}
+			return 0;
+
 		}
-		return 0;
-		
+
 	}
 
 	return DefWindowProc(hwnd, msg, wParam, lParam);
@@ -422,7 +434,8 @@ void GameApp::CreateGraphicContext()
 		mClientWidth,
 		mClientHeight,
 
-		&mScene
+		&mScene,
+		&mRenderOption
 	};
 }
 
@@ -445,10 +458,10 @@ void GameApp::PreparePasses()
 	mPasses.push_back(make_unique<BloomPass>());
 	//mPasses.push_back(make_unique<FXAAPass>());
 	mPasses.push_back(make_unique<OutputPass>());
-
 #ifdef _DEBUG
 	mPasses.push_back(make_unique<DebugPass>());
 #endif
+	mPasses.push_back(make_unique<GUIPass>());
 
 	for (auto& pass : mPasses) {
 		pass->PreparePass(mGraphicContext);

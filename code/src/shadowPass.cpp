@@ -15,19 +15,6 @@ const XMMATRIX ShadowPass::mTexCoordTransform = XMMATRIX(
     0.5f, 0.5f, 0.0f, 1.0f
 );
 
-struct ShadowPassData : public PassData
-{
-    XMVECTOR lastSunPosition[MAX_CASCADE_COUNT];
-
-    ShadowPassData()
-    {
-        for (size_t i = 0; i < MAX_CASCADE_COUNT; i++)
-        {
-            lastSunPosition[i] = XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f);
-        }
-    }
-};
-
 void ShadowPass::PreparePass(const GraphicContext& context)
 {
     CD3DX12_DESCRIPTOR_RANGE tex2dTable;
@@ -194,9 +181,7 @@ void ShadowPass::DrawSunShadow(const GraphicContext& context)
     ShadowPassData* passData = dynamic_cast<ShadowPassData*>(context.frameResource->GetOrCreate(this, 
         []() {
             return make_unique<ShadowPassData>();
-        }
-    ));
-
+        }));
 
     const XMMATRIX sunWorldToLocal = XMMatrixLookToLH(
         XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f), 

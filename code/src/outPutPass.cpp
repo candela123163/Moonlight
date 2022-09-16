@@ -68,20 +68,33 @@ void OutputPass::PreparePass(const GraphicContext& context)
 
 void OutputPass::PreprocessPass(const GraphicContext& context)
 {
-    size_t rtKey = hash<string>()("Bloom");
-    mInputRT = Globals::UATextureContainer.Get(rtKey);
+
 }
 
 void OutputPass::DrawPass(const GraphicContext& context)
 {
-    mInputRT->TransitionTo(context.commandList, TextureState::Read);
+    ITexture* inputRT = nullptr;
+    if (context.renderOption->BloomEnable)
+    {
+        inputRT = Globals::UATextureContainer.Get(hash<string>()("Bloom"));
+    }
+    else if(context.renderOption->TAAEnable)
+    {
+        inputRT = Globals::RenderTextureContainer.Get(hash<string>()("TAAMap"));
+    }
+    else
+    {
+        inputRT = Globals::RenderTextureContainer.Get(hash<string>()("OpaqueRT"));
+    }
+    
+    inputRT->TransitionTo(context.commandList, TextureState::Read);
     GameApp::GetApp()->SetDefaultRenderTarget(true, false);
     
     context.commandList->SetGraphicsRootSignature(mSignature.Get());
     context.commandList->SetPipelineState(mPSO.Get());
 
     context.commandList->SetGraphicsRootDescriptorTable((int)RootSignatureParam::InputTexture,
-        mInputRT->GetSrvDescriptorData().GPUHandle);
+        inputRT->GetSrvDescriptorData().GPUHandle);
 
     context.commandList->IASetVertexBuffers(0, 0, nullptr);
     context.commandList->IASetIndexBuffer(nullptr);

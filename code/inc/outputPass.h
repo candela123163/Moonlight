@@ -4,8 +4,6 @@
 #include "util.h"
 using Microsoft::WRL::ComPtr;
 
-class ITexture;
-
 class OutputPass final : public PassBase
 {
 public:
@@ -26,6 +24,4 @@ private:
 private:
     ComPtr<ID3D12RootSignature> mSignature = nullptr;
     ComPtr<ID3D12PipelineState> mPSO = nullptr;
-
-    ITexture* mInputRT;
 };

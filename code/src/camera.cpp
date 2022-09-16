@@ -1,6 +1,8 @@
 #include "stdafx.h"
 #include "camera.h"
 #include "frameResource.h"
+#include "renderOption.h"
+
 
 using namespace DirectX;
 using namespace std;
@@ -244,7 +246,6 @@ void Camera::UpdateViewMatrix()
 	}
 }
 
-
 void Camera::UpdateConstant(const GraphicContext& context)
 {
 	UpdateViewMatrix();
@@ -256,10 +257,14 @@ void Camera::UpdateConstant(const GraphicContext& context)
 
 	// jitter
 	int jitterIndex = 1 + (context.frameCount % mJitterPeriod);
-	XMFLOAT2 jitter = XMFLOAT2(
-		(GetHalton(jitterIndex, 2) - 0.5) / context.screenWidth,
-		(GetHalton(jitterIndex, 3) - 0.5) / context.screenHeight
-	);
+	XMFLOAT2 jitter = XMFLOAT2(0.0f, 0.0f);
+	if(context.renderOption->TAAEnable){
+		jitter = XMFLOAT2(
+			(GetHalton(jitterIndex, 2) - 0.5) / context.screenWidth,
+			(GetHalton(jitterIndex, 3) - 0.5) / context.screenHeight
+		);
+	}
+	
 	XMMATRIX proj = unjitteredProj;
 	proj.r[2].m128_f32[0] = jitter.x * 2.0;
 	proj.r[2].m128_f32[1] = jitter.y * -2.0;

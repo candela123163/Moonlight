@@ -24,7 +24,7 @@ float2 GetOutputUV(int2 xy)
 {
     float w, h;
     _Output.GetDimensions(w, h);
-    return xy / float2(w, h);
+    return ((float2) xy + float2(0.5f, 0.5f)) / float2(w, h);
 }
 
 
@@ -123,35 +123,6 @@ float4 Prefilter(float4 color)
     return color / (luminance + 1.0f);
 }
 
-// Neutral tonemapping (Hable/Hejl/Frostbite)
-// Input is linear RGB
-float3 NeutralCurve(float3 x, float a, float b, float c, float d, float e, float f)
-{
-    return ((x * (a * x + c * b) + d * e) / (x * (a * x + b) + d * f)) - e / f;
-}
-
-float3 NeutralTonemap(float3 x)
-{
-    // Tonemap
-    const float a = 0.2;
-    const float b = 0.29;
-    const float c = 0.24;
-    const float d = 0.272;
-    const float e = 0.02;
-    const float f = 0.3;
-    const float whiteLevel = 5.3;
-    const float whiteClip = 1.0;
-
-    float3 whiteScale = (1.0).xxx / NeutralCurve(whiteLevel, a, b, c, d, e, f);
-    x = NeutralCurve(x * whiteScale, a, b, c, d, e, f);
-    x *= whiteScale;
-
-    // Post-curve white point adjustment
-    x /= whiteClip.xxx;
-
-    return x;
-}
-
 
 [numthreads(GROUP_SIZE, 1, 1)]
 void Prefiler_cs(int3 dispatchThreadID : SV_DispatchThreadID)
@@ -181,7 +152,7 @@ void UpSample_cs(int3 dispatchThreadID : SV_DispatchThreadID)
     
     float4 accumulatedBloom = UpsampleTent(_BloomChain, _BloomChainMipLevel, uv);
     float4 bloom = _InputMap.SampleLevel(_SamplerLinearClamp, uv, _InputMapMipLevel);
-    _Output[xy] = lerp(bloom, accumulatedBloom, _Intensity);
+    _Output[xy] = bloom + accumulatedBloom * _Intensity;
 }
 
 [numthreads(GROUP_SIZE, 1, 1)]
@@ -192,12 +163,6 @@ void Combine_cs(int3 dispatchThreadID : SV_DispatchThreadID)
     
     float4 bloom = UpsampleTent(_BloomChain, _BloomChainMipLevel, uv);    
     float4 color = _InputMap.SampleLevel(_SamplerLinearClamp, uv, _InputMapMipLevel);
-        
-    bloom += color - Prefilter(color);
-    
-    float3 toneMapped = NeutralTonemap(lerp(color.rgb, bloom.rgb, _Intensity));
 
-    float3 gammaCorrect = pow(toneMapped, 1.0f / 2.2f);
-    float gammaSpaceLuma = sqrt(Luminance(toneMapped));
-    _Output[xy] = float4(gammaCorrect, gammaSpaceLuma);
+    _Output[xy] = float4(color.rgb + bloom.rgb * _Intensity, color.a);
 }

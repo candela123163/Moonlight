@@ -160,6 +160,8 @@ public:
 
     void BindUAV(ID3D12Device* device, DescriptorHeap* descriptorHeap);
 
+    void Clear(ID3D12GraphicsCommandList* commandList, UINT depthSlice, UINT mipLevel, const FLOAT clearValue[4]);
+
     DescriptorData GetUavDescriptorData(UINT mipLevel = 0) const;
 
 protected:

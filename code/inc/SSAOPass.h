@@ -72,6 +72,16 @@ private:
         float NormalDepthSampleScale;
     };
 
+    struct SSAOPassData : public PassData
+    {
+        std::unique_ptr<UploadBuffer<SSAOConstant, true>> ssaoConstant;
+        
+        SSAOPassData(ID3D12Device* device)
+        {
+            ssaoConstant = std::make_unique<UploadBuffer<SSAOConstant, true>>(device);
+        }
+    };
+
 private:
     ComPtr<ID3D12RootSignature> mSSAOSignature = nullptr;
     ComPtr<ID3D12RootSignature> mBlurSignature = nullptr;
@@ -90,7 +100,8 @@ private:
     UnorderAccessTexture* mSSAOBlurYMap = nullptr;
 
     UINT mSSAOWidth, mSSAOHeight;
-    std::unique_ptr<UploadBuffer<SSAOConstant, true>> mSSAOConstant;
+    SSAOConstant mSSAOParam;
+
     std::unique_ptr<UploadBuffer<RenderTargetParamConstant, true>> mSSAORTConstant;
     std::unique_ptr<UploadBuffer<BlurConstant, true>> mBlurConstant;
 

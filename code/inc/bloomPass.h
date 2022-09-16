@@ -25,7 +25,7 @@ private:
     void DoUpSample(const GraphicContext& context);
     void DoCombine(const GraphicContext& context);
 
-    void CalculateBloomParam(float inputWidth, float inputHeight);
+    void CalculateBloomParam(const RenderOption* option);
 
     enum class RootSignatureParam
     {
@@ -46,6 +46,15 @@ private:
         float Intensity;
     };
 
+    struct BloomPassData : PassData
+    {
+        std::unique_ptr<UploadBuffer<BloomConstant, true>> ssaoConstant;
+
+        BloomPassData(ID3D12Device* device)
+        {
+            ssaoConstant = std::make_unique<UploadBuffer<BloomConstant, true>>(device);
+        }
+    };
 
 private:
     ComPtr<ID3D12RootSignature> mSignature;
@@ -60,7 +69,6 @@ private:
     ITexture* mInputRT;
 
     BloomConstant mBloomParam;
-    std::unique_ptr<UploadBuffer<BloomConstant, true>> mBloomConstant;
 
     const float mThreshold = 1.0f;
     const float mKnee = 0.08f;

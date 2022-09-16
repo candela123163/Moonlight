@@ -3,6 +3,7 @@
 #include "camera.h"
 #include "util.h"
 #include "globals.h"
+#include "renderOption.h"
 using namespace std;
 using namespace DirectX;
 using namespace nlohmann;
@@ -51,6 +52,8 @@ void Scene::OnLoadOver(const GraphicContext& context)
 
 void Scene::OnUpdate(const GraphicContext& context)
 {
+    UpdateRenderOption(context);
+
     GenerateVisiblePointLights();
     GenerateVisibleSpotLights();
 
@@ -137,12 +140,17 @@ bool Scene::LoadLight(const nlohmann::json& sceneConfig, const GraphicContext& c
     mDirectionalLight.Intensity = static_cast<float>(sunConfig["Intensity"]);
 
     auto& directionConfig = sunConfig["Direction"];
-    mDirectionalLight.Direction = XMFLOAT3(
+    XMVECTOR sunDirection = XMVector4Normalize(XMVectorSet(
         static_cast<float>(directionConfig[0]),
         static_cast<float>(directionConfig[1]),
-        static_cast<float>(directionConfig[2])
-    );
-
+        static_cast<float>(directionConfig[2]),
+        0.0f
+    ));
+    XMStoreFloat3(&mDirectionalLight.Direction, sunDirection);
+    
+    context.renderOption->SunIntensity = mDirectionalLight.Intensity;
+    context.renderOption->SunDirection = mDirectionalLight.Direction;
+    
     int cascadeCount = min(MAX_CASCADE_COUNT, mCamera->GetCascadeCount());
     for (size_t i = 0; i < cascadeCount; i++)
     {
@@ -523,3 +531,9 @@ void Scene::GenerateVisibleSpotLights()
     }
 }
 
+void Scene::UpdateRenderOption(const GraphicContext& context)
+{
+    RenderOption* option = context.renderOption;
+    mDirectionalLight.Intensity = option->SunIntensity;
+    mDirectionalLight.Direction = option->SunDirection;
+}

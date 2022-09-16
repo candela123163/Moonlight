@@ -668,3 +668,13 @@ DescriptorData UnorderAccessTexture::GetUavDescriptorData(UINT mipLevel ) const
         mUavDescriptorData.HeapIndex + mipLevel
     };
 }
+
+void UnorderAccessTexture::Clear(ID3D12GraphicsCommandList* commandList, UINT depthSlice, UINT mipLevel, const FLOAT clearValue[4])
+{
+    CD3DX12_CPU_DESCRIPTOR_HANDLE cpuHandle = mUavDescriptorData.CPUHandle;
+    CD3DX12_GPU_DESCRIPTOR_HANDLE gpuHandle = mUavDescriptorData.GPUHandle;
+    cpuHandle.Offset(mMipCount * depthSlice + mipLevel, mUavDescriptorData.IncrementSize);
+    gpuHandle.Offset(mMipCount * depthSlice + mipLevel, mUavDescriptorData.IncrementSize);
+
+    commandList->ClearUnorderedAccessViewFloat(gpuHandle, cpuHandle, mTexture.Get(), clearValue, 0, nullptr);
+}

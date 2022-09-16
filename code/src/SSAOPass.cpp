@@ -24,14 +24,16 @@ void SSAOPass::PreprocessPass(const GraphicContext& context)
     size_t normalMapKey = hash<string>()("NormalMap");
     mNormalMap = Globals::RenderTextureContainer.Get(normalMapKey);
 
-    SSAOConstant ssaoParam;
-    ssaoParam.AORadius = 0.3f;
-    ssaoParam.AOSampleCount = 24;
-    ssaoParam.AOPower = 8.0f;
-    ssaoParam.AOFadeRange = 0.4f;
-    ssaoParam.NormalMapIndex = mNormalMap->GetSrvDescriptorData().HeapIndex;
-    ssaoParam.DepthMapIndex = GameApp::GetApp()->GetDepthStencilTarget()->GetSrvDescriptorData().HeapIndex;
-    mSSAOConstant->CopyData(ssaoParam);
+    mSSAOParam.AORadius = 0.3f;
+    mSSAOParam.AOSampleCount = 24;
+    mSSAOParam.AOPower = 8.0f;
+    mSSAOParam.AOFadeRange = 0.4f;
+    mSSAOParam.NormalMapIndex = mNormalMap->GetSrvDescriptorData().HeapIndex;
+    mSSAOParam.DepthMapIndex = GameApp::GetApp()->GetDepthStencilTarget()->GetSrvDescriptorData().HeapIndex;
+
+    context.renderOption->SSAOEnable = true;
+    context.renderOption->SSAORadius = mSSAOParam.AORadius;
+    context.renderOption->SSAOPower = mSSAOParam.AOPower;
 
     RenderTargetParamConstant renderTargetParam;
     renderTargetParam.RenderTargetSize = XMFLOAT4(mSSAOWidth, mSSAOHeight, 1.0f / mSSAOWidth, 1.0f / mSSAOHeight);
@@ -42,16 +44,24 @@ void SSAOPass::PreprocessPass(const GraphicContext& context)
     blurParam.RangeSigma = 3.0f;
     blurParam.DepthSigma = 2.0f;
     blurParam.NormalSigma = 1.0f;
-    blurParam.NormalMapIndex = ssaoParam.NormalMapIndex;
-    blurParam.DepthMapIndex = ssaoParam.DepthMapIndex;
+    blurParam.NormalMapIndex = mSSAOParam.NormalMapIndex;
+    blurParam.DepthMapIndex = mSSAOParam.DepthMapIndex;
     blurParam.MapWidth = mSSAOWidth;
     blurParam.MapHeight = mSSAOHeight;
     blurParam.NormalDepthSampleScale = float(context.screenWidth) / blurParam.MapWidth;
     mBlurConstant->CopyData(blurParam);
+
+
 }
 
 void SSAOPass::DrawPass(const GraphicContext& context)
 {
+    if (!context.renderOption->SSAOEnable)
+    {
+        FLOAT clearValue[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
+        mSSAOBlurYMap->Clear(context.commandList, 0, 0, clearValue);
+        return;
+    }
     DrawSSAO(context);
     BlurSSAO(context);
 }
@@ -86,7 +96,6 @@ void SSAOPass::CreateResource(const GraphicContext& context)
             DXGI_FORMAT_R8_UNORM)
     );
 
-    mSSAOConstant = make_unique<UploadBuffer<SSAOConstant, true>>(context.device);
     mSSAORTConstant = make_unique<UploadBuffer<RenderTargetParamConstant, true>>(context.device);
     mBlurConstant = make_unique<UploadBuffer<BlurConstant, true>>(context.device);
 }
@@ -247,11 +256,20 @@ void SSAOPass::DrawSSAO(const GraphicContext& context)
     context.commandList->SetGraphicsRootConstantBufferView((int)SSAORootSignatureParam::CameraConstant,
         context.frameResource->ConstantCamera->GetElementGPUAddress());
 
-    context.commandList->SetGraphicsRootConstantBufferView((int)SSAORootSignatureParam::SSAOConstant,
-        mSSAOConstant->GetElementGPUAddress());
-
     context.commandList->SetGraphicsRootDescriptorTable((int)SSAORootSignatureParam::Texture2DTable,
         context.descriptorHeap->GetSrvHeap()->GetGPUDescriptorHandleForHeapStart());
+    
+    mSSAOParam.AORadius = context.renderOption->SSAORadius;
+    mSSAOParam.AOPower = context.renderOption->SSAOPower;
+    
+    SSAOPassData* passData = dynamic_cast<SSAOPassData*>(context.frameResource->GetOrCreate(this,
+        [&]() {
+        return make_unique<SSAOPassData>(context.device);
+    }));
+    passData->ssaoConstant->CopyData(mSSAOParam);
+
+    context.commandList->SetGraphicsRootConstantBufferView((int)SSAORootSignatureParam::SSAOConstant,
+        passData->ssaoConstant->GetElementGPUAddress());
 
 
     // Draw fullscreen quad.

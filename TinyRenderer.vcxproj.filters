@@ -16,6 +16,12 @@
     <Filter Include="Shader">
       <UniqueIdentifier>{435a27e5-8416-4fb1-aa79-d44393f8f4c1}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Extern">
+      <UniqueIdentifier>{82587c07-0ac0-4a56-b3be-d1b914c88d12}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Extern\imgui">
+      <UniqueIdentifier>{aa206428-5341-4e38-be21-cf7c98ac4138}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="code\src\main.cpp">
@@ -86,6 +92,30 @@
     </ClCompile>
     <ClCompile Include="code\src\preZPass.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="code\src\temporalAAPass.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="code\src\GUIPass.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="code\extern\imgui\imgui.cpp">
+      <Filter>Extern\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="code\extern\imgui\imgui_draw.cpp">
+      <Filter>Extern\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="code\extern\imgui\imgui_impl_dx12.cpp">
+      <Filter>Extern\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="code\extern\imgui\imgui_impl_win32.cpp">
+      <Filter>Extern\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="code\extern\imgui\imgui_tables.cpp">
+      <Filter>Extern\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="code\extern\imgui\imgui_widgets.cpp">
+      <Filter>Extern\imgui</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -168,6 +198,36 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="code\inc\preZPass.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="code\inc\temporalAAPass.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="code\inc\GUIPass.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="code\extern\imgui\imgui.h">
+      <Filter>Extern\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="code\extern\imgui\imgui_impl_dx12.h">
+      <Filter>Extern\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="code\extern\imgui\imgui_impl_win32.h">
+      <Filter>Extern\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="code\extern\imgui\imgui_internal.h">
+      <Filter>Extern\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="code\extern\imgui\imstb_rectpack.h">
+      <Filter>Extern\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="code\extern\imgui\imstb_textedit.h">
+      <Filter>Extern\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="code\extern\imgui\imstb_truetype.h">
+      <Filter>Extern\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="code\inc\renderOption.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

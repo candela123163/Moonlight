@@ -106,10 +106,17 @@ void TAAPass::PreprocessPass(const GraphicContext& context)
     taaParam.HistoryColorMapIndex = mHistory->GetSrvDescriptorData().HeapIndex;
 
     mTAAConstant->CopyData(taaParam);
+
+    context.renderOption->TAAEnable = true;
 }
 
 void TAAPass::DrawPass(const GraphicContext& context)
 {
+    if (!context.renderOption->TAAEnable)
+    {
+        return;
+    }
+
     if (context.frameCount == 0)
     {
         RenderTexture* frameColor = Globals::RenderTextureContainer.Get(hash<string>()("OpaqueRT"));

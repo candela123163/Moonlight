@@ -4,6 +4,7 @@
 #include "frameResource.h"
 #include "globals.h"
 #include "scene.h"
+#include "renderOption.h"
 using Microsoft::WRL::ComPtr;
 
 class PassBase;
@@ -119,6 +120,7 @@ private:
     int mClientHeight = WINDOW_HEIGHT;
 
     GraphicContext mGraphicContext;
+    RenderOption mRenderOption;
 
     Scene mScene;
 

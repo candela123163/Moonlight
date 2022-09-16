@@ -85,6 +85,8 @@ private:
     void GenerateVisiblePointLights() ;
     void GenerateVisibleSpotLights();
 
+    void UpdateRenderOption(const GraphicContext& context);
+
 private:
     std::unique_ptr<Camera> mCamera;
 

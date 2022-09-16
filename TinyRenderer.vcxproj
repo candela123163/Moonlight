@@ -71,7 +71,7 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>$(SolutionDir)code\inc;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)code\inc;$(SolutionDir)code\extern;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <IncludePath>$(SolutionDir)code\inc;$(IncludePath)</IncludePath>
@@ -142,6 +142,24 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="code\extern\imgui\imgui.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="code\extern\imgui\imgui_draw.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="code\extern\imgui\imgui_impl_dx12.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="code\extern\imgui\imgui_impl_win32.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="code\extern\imgui\imgui_tables.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="code\extern\imgui\imgui_widgets.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="code\src\bloomPass.cpp" />
     <ClCompile Include="code\src\camera.cpp" />
     <ClCompile Include="code\src\debugPass.cpp">
@@ -158,6 +176,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Use</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="code\src\globals.cpp" />
+    <ClCompile Include="code\src\GUIPass.cpp" />
     <ClCompile Include="code\src\outPutPass.cpp" />
     <ClCompile Include="code\src\preZPass.cpp" />
     <ClCompile Include="code\src\SSAOPass.cpp" />
@@ -189,6 +208,13 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="code\extern\imgui\imgui.h" />
+    <ClInclude Include="code\extern\imgui\imgui_impl_dx12.h" />
+    <ClInclude Include="code\extern\imgui\imgui_impl_win32.h" />
+    <ClInclude Include="code\extern\imgui\imgui_internal.h" />
+    <ClInclude Include="code\extern\imgui\imstb_rectpack.h" />
+    <ClInclude Include="code\extern\imgui\imstb_textedit.h" />
+    <ClInclude Include="code\extern\imgui\imstb_truetype.h" />
     <ClInclude Include="code\inc\bloomPass.h" />
     <ClInclude Include="code\inc\camera.h" />
     <ClInclude Include="code\inc\d3dx12.h" />
@@ -199,8 +225,10 @@
     <ClInclude Include="code\inc\gameApp.h" />
     <ClInclude Include="code\inc\globals.h" />
     <ClInclude Include="code\inc\graphicContext.h" />
+    <ClInclude Include="code\inc\GUIPass.h" />
     <ClInclude Include="code\inc\outputPass.h" />
     <ClInclude Include="code\inc\preZPass.h" />
+    <ClInclude Include="code\inc\renderOption.h" />
     <ClInclude Include="code\inc\SSAOPass.h" />
     <ClInclude Include="code\inc\IBLPreprocessPass.h" />
     <ClInclude Include="code\inc\light.h" />

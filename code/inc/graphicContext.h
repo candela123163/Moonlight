@@ -1,6 +1,5 @@
 #pragma once
 
-
 struct ID3D12Device;
 struct ID3D12GraphicsCommandList;
 struct ID3D12CommandQueue;
@@ -9,7 +8,7 @@ class DescriptorHeap;
 struct FrameResources;
 enum DXGI_FORMAT;
 class Scene;
-
+struct RenderOption;
 
 struct GraphicContext
 {
@@ -26,5 +25,6 @@ struct GraphicContext
     int screenHeight;
 
     Scene* scene;
+    RenderOption* renderOption;
 };
 

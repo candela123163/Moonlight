@@ -1,28 +1,46 @@
 #include "stdafx.h"
 #include "bloomPass.h"
 #include "texture.h"
+#include "renderOption.h"
 using namespace std;
 using namespace DirectX;
 
 void BloomPass::PreparePass(const GraphicContext& context)
 {
-    CalculateBloomParam(context.screenWidth, context.screenHeight);
+    float size = min(context.screenWidth, context.screenHeight);
+    mIterationCount = (int)floorf(log2f(size / mMinDownScaleSize));
+    mIterationCount = clamp(mIterationCount, mMinChainLength, mMaxChainLength);
+
     CreateResource(context);
     CreateSignaturePSO(context);
 }
 
 void BloomPass::PreprocessPass(const GraphicContext& context)
-{
-    size_t rtKey = hash<string>()("TAAMap");
-    mInputRT = Globals::RenderTextureContainer.Get(rtKey);
-
-    mBloomConstant->CopyData(mBloomParam);
+{    
+    context.renderOption->BloomEnable = true;
+    context.renderOption->BloomThreshold = mThreshold;
+    context.renderOption->BloomCurveKnee = mKnee;
+    context.renderOption->BloomIntensity = mIntensity;
 }
 
 void BloomPass::DrawPass(const GraphicContext& context)
 {
+    if (!context.renderOption->BloomEnable) {
+        return;
+    }
+
     context.commandList->SetComputeRootSignature(mSignature.Get());
 
+    if (context.renderOption->TAAEnable)
+    {
+        mInputRT = Globals::RenderTextureContainer.Get(hash<string>()("TAAMap"));
+    }
+    else
+    {
+        mInputRT = Globals::RenderTextureContainer.Get(hash<string>()("OpaqueRT"));
+    }
+
+    CalculateBloomParam(context.renderOption);
     DoPrefilter(context);
     DoDownSample(context);
     DoUpSample(context);
@@ -52,7 +70,6 @@ void BloomPass::CreateResource(const GraphicContext& context)
             DXGI_FORMAT_R16G16B16A16_FLOAT)
     );
 
-    mBloomConstant = make_unique<UploadBuffer<BloomConstant, true>>(context.device);
 }
 
 void BloomPass::CreateSignaturePSO(const GraphicContext& context)
@@ -150,9 +167,15 @@ void BloomPass::DoPrefilter(const GraphicContext& context)
 {
     context.commandList->SetPipelineState(mPrefilterPSO.Get());
 
+    BloomPassData* passData = dynamic_cast<BloomPassData*>(context.frameResource->GetOrCreate(this,
+        [&]() {
+        return make_unique<BloomPassData>(context.device);
+    }));
+    passData->ssaoConstant->CopyData(mBloomParam);
+
     context.commandList->SetComputeRootConstantBufferView(
         (int)RootSignatureParam::BloomConstant,
-        mBloomConstant->GetElementGPUAddress()
+        passData->ssaoConstant->GetElementGPUAddress()
     );
 
     int bloomChainMipLevel = 0;
@@ -324,17 +347,13 @@ void BloomPass::DoCombine(const GraphicContext& context)
 
 }
 
-void  BloomPass::CalculateBloomParam(float inputWidth, float inputHeight)
+void  BloomPass::CalculateBloomParam(const RenderOption* option)
 {
-    float size = min(inputWidth, inputHeight);
-    mIterationCount = (int)floorf(log2f(size / mMinDownScaleSize));
-    mIterationCount = clamp(mIterationCount, mMinChainLength, mMaxChainLength);
-
-    mBloomParam.Intensity = mIntensity;
+    mBloomParam.Intensity = option->BloomIntensity;
     mBloomParam.Threshold = XMFLOAT4(
-        mThreshold,
-        mThreshold - mThreshold * mKnee,
-        2.0f * mThreshold * mKnee,
-        0.25f / (mThreshold * mKnee)
+        option->BloomThreshold,
+        option->BloomThreshold - option->BloomThreshold * option->BloomCurveKnee,
+        2.0f * option->BloomThreshold * option->BloomCurveKnee,
+        0.25f / (option->BloomThreshold * option->BloomCurveKnee)
     );
 }
