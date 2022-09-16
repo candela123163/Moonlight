@@ -27,6 +27,7 @@ cbuffer IBLConstant : register(b4)
     int _PrefilterMapMipCount;
     
     int _SSAOMapIndex;
+    int _IBLEnable;
 }
 
 DEFINE_SHADOW_CONSTANT(b5)

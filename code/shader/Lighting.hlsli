@@ -26,6 +26,11 @@ float3 Shading(Surface surface, Light light)
 
 float3 EnvShading(Surface surface)
 {
+    if(!_IBLEnable)
+    {
+        return 0.0f;
+    }
+    
     EnvLight envLight = GetEnvLight(surface);
     BRDF indirectBRDF = IndirectBRDF(surface);
     return indirectBRDF.diffuse * envLight.irradiance + indirectBRDF.specular * envLight.prefilteredColor;

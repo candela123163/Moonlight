@@ -4,6 +4,7 @@
 struct RenderOption
 {
     // light & shadow
+    bool IBLEnable;
     DirectX::XMFLOAT3 SunDirection;
     float SunIntensity;
 

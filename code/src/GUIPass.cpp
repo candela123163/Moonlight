@@ -36,6 +36,7 @@ void GUIPass::DrawPass(const GraphicContext& context)
     RenderOption* option = context.renderOption;
 
     ImGui::Text("Light & Shadow");
+    ImGui::Checkbox("IBL Enable", &option->IBLEnable);
     ImGui::DragFloat("Sun Intensity", &option->SunIntensity, 0.05f, 0.0f, 100.0f);
     ImGui::DragFloat("Sun X", &option->SunDirection.x, 0.005f, -1.0f, 1.0f);
     ImGui::DragFloat("Sun Y", &option->SunDirection.y, 0.005f, -1.0f, 1.0f);

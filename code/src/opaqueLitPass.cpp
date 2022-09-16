@@ -97,7 +97,6 @@ void OpaqueLitPass::PreparePass(const GraphicContext& context)
 
     ThrowIfFailed(context.device->CreateGraphicsPipelineState(&basePsoDesc, IID_PPV_ARGS(mPSO.GetAddressOf())));
 
-    mIBLConstant = make_unique<UploadBuffer<IBLConstant, true>>(context.device);
     mRTConstant = make_unique<UploadBuffer<RenderTargetParamConstant, true>>(context.device);
 
     mBRDFLUT = Texture::GetOrLoad(Globals::ImagePath / "IBL_BRDF_LUT.png", false, context);
@@ -125,12 +124,21 @@ void OpaqueLitPass::DrawPass(const GraphicContext& context)
     context.commandList->SetGraphicsRootSignature(mSignature.Get());
     context.commandList->SetPipelineState(mPSO.Get());
 
+    mIBLParam.IBLEnable = context.renderOption->IBLEnable ? 1 : 0;
+
+    LitPassData* passData = dynamic_cast<LitPassData*>(context.frameResource->GetOrCreate(this,
+        [&]() {
+        return make_unique<LitPassData>(context.device);
+    }));
+    passData->ssaoConstant->CopyData(mIBLParam);
+
+    context.commandList->SetGraphicsRootConstantBufferView((int)RootSignatureParam::IBLConstant,
+        passData->ssaoConstant->GetElementGPUAddress());
+
     context.commandList->SetGraphicsRootConstantBufferView((int)RootSignatureParam::CameraConstant,
         context.frameResource->ConstantCamera->GetElementGPUAddress());
     context.commandList->SetGraphicsRootConstantBufferView((int)RootSignatureParam::LightConstant,
         context.frameResource->ConstantLight->GetElementGPUAddress());
-    context.commandList->SetGraphicsRootConstantBufferView((int)RootSignatureParam::IBLConstant,
-        mIBLConstant->GetElementGPUAddress());
     context.commandList->SetGraphicsRootConstantBufferView((int)RootSignatureParam::ShadowConstant,
         context.frameResource->ConstantShadow->GetElementGPUAddress());
     context.commandList->SetGraphicsRootConstantBufferView((int)RootSignatureParam::RenderTargetConstant,
@@ -178,14 +186,14 @@ void OpaqueLitPass::PreprocessPass(const GraphicContext& context)
     size_t SSAOKey = hash<string>()("SSAO");
     ITexture* ssaoMap = Globals::UATextureContainer.Get(SSAOKey);
 
-    IBLConstant iblConstant;
-    iblConstant.BRDFLUTIndex = mBRDFLUT->GetSrvDescriptorData().HeapIndex;
-    iblConstant.IrradianceMapIndex = irradianceMap->GetSrvDescriptorData().HeapIndex;
-    iblConstant.PrefilterMapIndex = prefilterMap->GetSrvDescriptorData().HeapIndex;
-    iblConstant.PrefilterMapMipCount = prefilterMap->GetMipCount();
-    iblConstant.SSAOMapIndex = ssaoMap->GetSrvDescriptorData().HeapIndex;
+    mIBLParam.BRDFLUTIndex = mBRDFLUT->GetSrvDescriptorData().HeapIndex;
+    mIBLParam.IrradianceMapIndex = irradianceMap->GetSrvDescriptorData().HeapIndex;
+    mIBLParam.PrefilterMapIndex = prefilterMap->GetSrvDescriptorData().HeapIndex;
+    mIBLParam.PrefilterMapMipCount = prefilterMap->GetMipCount();
+    mIBLParam.SSAOMapIndex = ssaoMap->GetSrvDescriptorData().HeapIndex;
+    mIBLParam.IBLEnable = 1;
 
-    mIBLConstant->CopyData(iblConstant);
+    context.renderOption->IBLEnable = true;
 
     RenderTargetParamConstant renderTargetParam;
     renderTargetParam.RenderTargetSize = XMFLOAT4(context.screenWidth, context.screenHeight, 1.0f / context.screenWidth, 1.0f / context.screenHeight);

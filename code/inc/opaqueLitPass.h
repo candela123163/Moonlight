@@ -2,6 +2,7 @@
 #include "stdafx.h"
 #include "passBase.h"
 #include "util.h"
+#include "frameResource.h"
 using Microsoft::WRL::ComPtr;
 
 class Texture;
@@ -25,6 +26,17 @@ private:
         int PrefilterMapMipCount;
 
         int SSAOMapIndex;
+        int IBLEnable;
+    };
+
+    struct LitPassData : public PassData
+    {
+        std::unique_ptr<UploadBuffer<IBLConstant, true>> ssaoConstant;
+
+        LitPassData(ID3D12Device* device)
+        {
+            ssaoConstant = std::make_unique<UploadBuffer<IBLConstant, true>>(device);
+        }
     };
 
     enum class RootSignatureParam
@@ -48,7 +60,7 @@ private:
     ComPtr<ID3D12RootSignature> mSignature = nullptr;
     ComPtr<ID3D12PipelineState> mPSO = nullptr;
 
-    std::unique_ptr<UploadBuffer<IBLConstant, true>> mIBLConstant;
+    IBLConstant mIBLParam;
     std::unique_ptr<UploadBuffer<RenderTargetParamConstant, true>> mRTConstant;
 
     Texture* mBRDFLUT;
