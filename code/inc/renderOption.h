@@ -6,6 +6,7 @@ struct RenderOption
     // light & shadow
     bool IBLEnable;
     DirectX::XMFLOAT3 SunDirection;
+    DirectX::XMFLOAT3 SunColor;
     float SunIntensity;
 
     // SSAO

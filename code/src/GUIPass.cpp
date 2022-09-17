@@ -35,31 +35,38 @@ void GUIPass::DrawPass(const GraphicContext& context)
 
     RenderOption* option = context.renderOption;
 
-    ImGui::Text("Light & Shadow");
-    ImGui::Checkbox("IBL Enable", &option->IBLEnable);
-    ImGui::DragFloat("Sun Intensity", &option->SunIntensity, 0.05f, 0.0f, 100.0f);
-    ImGui::DragFloat("Sun X", &option->SunDirection.x, 0.005f, -1.0f, 1.0f);
-    ImGui::DragFloat("Sun Y", &option->SunDirection.y, 0.005f, -1.0f, 1.0f);
-    ImGui::DragFloat("Sun Z", &option->SunDirection.z, 0.005f, -1.0f, 1.0f);
+    if (ImGui::CollapsingHeader("Light")){
+        ImGui::Checkbox("IBL Enable", &option->IBLEnable);
+        ImGui::DragFloat("Sun Intensity", &option->SunIntensity, 0.05f, 0.0f, 100.0f);
+        ImGui::DragFloat("Sun X", &option->SunDirection.x, 0.005f, -1.0f, 1.0f);
+        ImGui::DragFloat("Sun Y", &option->SunDirection.y, 0.005f, -1.0f, 1.0f);
+        ImGui::DragFloat("Sun Z", &option->SunDirection.z, 0.005f, -1.0f, 1.0f);
 
-    ImGui::Text("SSAO");
-    ImGui::Checkbox("SSAO Enable", &option->SSAOEnable);
-    ImGui::DragFloat("Radius", &option->SSAORadius, 0.005f, 0.1f, 3.0f);
-    ImGui::DragFloat("Power", &option->SSAOPower, 0.005f, 1.0f, 10.0f);
+        float color[3] = { option->SunColor.x, option->SunColor.y, option->SunColor.z };
+        ImGui::ColorEdit3("Color", color);
+        option->SunColor = DirectX::XMFLOAT3(color);
+    }
 
-    ImGui::Text("Bloom");
-    ImGui::Checkbox("Bloom Enable", &option->BloomEnable);
-    ImGui::DragFloat("Threshold", &option->BloomThreshold, 0.005f, 0.1f, 10.0f);
-    ImGui::DragFloat("Curve Knee", &option->BloomCurveKnee, 0.005f, 0.01f, 1.0f);
-    ImGui::DragFloat("Intensity", &option->BloomIntensity, 0.005f, 0.0f, 2.0f);
+    if (ImGui::CollapsingHeader("SSAO")) {
+        ImGui::Checkbox("SSAO Enable", &option->SSAOEnable);
+        ImGui::DragFloat("Radius", &option->SSAORadius, 0.005f, 0.1f, 3.0f);
+        ImGui::DragFloat("Power", &option->SSAOPower, 0.005f, 1.0f, 10.0f);
+    }
 
-    ImGui::Text("TAA");
-    ImGui::Checkbox("TAA Enable", &option->TAAEnable);
-    ImGui::DragFloat("Clip Lower Bound", &option->TAAClipBound.x, 0.005f, 0.75f, 1.5f);
-    ImGui::DragFloat("Clip Upper Bound", &option->TAAClipBound.y, 0.005f, 1.5f, 8.0f);
-    ImGui::DragFloat("Motion Weight", &option->TAAMotionWeight, 10.0f, 100.0f, 5000.0f);
-    ImGui::DragFloat("Sharpness", &option->TAASharpness, 0.001f, 0.0f, 0.5f);
+    if (ImGui::CollapsingHeader("Bloom")) {
+        ImGui::Checkbox("Bloom Enable", &option->BloomEnable);
+        ImGui::DragFloat("Threshold", &option->BloomThreshold, 0.005f, 0.1f, 10.0f);
+        ImGui::DragFloat("Curve Knee", &option->BloomCurveKnee, 0.005f, 0.01f, 1.0f);
+        ImGui::DragFloat("Intensity", &option->BloomIntensity, 0.005f, 0.0f, 2.0f);
+    }
 
+    if (ImGui::CollapsingHeader("TAA")) {
+        ImGui::Checkbox("TAA Enable", &option->TAAEnable);
+        ImGui::DragFloat("Clip Lower Bound", &option->TAAClipBound.x, 0.005f, 0.75f, 1.5f);
+        ImGui::DragFloat("Clip Upper Bound", &option->TAAClipBound.y, 0.005f, 1.5f, 8.0f);
+        ImGui::DragFloat("Motion Weight", &option->TAAMotionWeight, 10.0f, 100.0f, 5000.0f);
+        ImGui::DragFloat("Sharpness", &option->TAASharpness, 0.001f, 0.0f, 0.5f);
+    }
     ImGui::End();
 
     ImGui::Render();

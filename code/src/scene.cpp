@@ -150,6 +150,7 @@ bool Scene::LoadLight(const nlohmann::json& sceneConfig, const GraphicContext& c
     
     context.renderOption->SunIntensity = mDirectionalLight.Intensity;
     context.renderOption->SunDirection = mDirectionalLight.Direction;
+    context.renderOption->SunColor = mDirectionalLight.Color;
     
     auto& shadowConfig = sceneConfig["SunShadow"];
     int cascadeCount = min(MAX_CASCADE_COUNT, static_cast<int>(shadowConfig["CascadeCount"]));
@@ -547,4 +548,5 @@ void Scene::UpdateRenderOption(const GraphicContext& context)
     RenderOption* option = context.renderOption;
     mDirectionalLight.Intensity = option->SunIntensity;
     mDirectionalLight.Direction = option->SunDirection;
+    mDirectionalLight.Color = option->SunColor;
 }

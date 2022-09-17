@@ -12,6 +12,4 @@ public:
     virtual void DrawPass(const GraphicContext& context) override;
     virtual void ReleasePass(const GraphicContext& context) override;
 
-
-
 };
