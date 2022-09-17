@@ -151,12 +151,16 @@ bool Scene::LoadLight(const nlohmann::json& sceneConfig, const GraphicContext& c
     context.renderOption->SunIntensity = mDirectionalLight.Intensity;
     context.renderOption->SunDirection = mDirectionalLight.Direction;
     
-    int cascadeCount = min(MAX_CASCADE_COUNT, mCamera->GetCascadeCount());
+    auto& shadowConfig = sceneConfig["SunShadow"];
+    int cascadeCount = min(MAX_CASCADE_COUNT, static_cast<int>(shadowConfig["CascadeCount"]));
+    auto& cascadeResolution = shadowConfig["ShadowMapResolution"];
+
     for (size_t i = 0; i < cascadeCount; i++)
     {
+        float resolution = min(DIRECTION_LIGHT_SHADOWMAP_MAX_RESOLUTION, (int)cascadeResolution[i]);
         mDirectionalLight.ShadowMaps[i] = make_unique<RenderTexture>(
             context.device, context.descriptorHeap,
-            DIRECTION_LIGHT_SHADOWMAP_RESOLUTION, DIRECTION_LIGHT_SHADOWMAP_RESOLUTION,
+            resolution, resolution,
             1, 1, TextureDimension::Tex2D,
             RenderTextureUsage::DepthBuffer, DXGI_FORMAT_D16_UNORM, TextureState::Read
             );
@@ -193,7 +197,7 @@ bool Scene::LoadLight(const nlohmann::json& sceneConfig, const GraphicContext& c
 
         pointLight.ShadowMap = make_unique<RenderTexture>(
             context.device, context.descriptorHeap,
-            POINT_LIGHT_SHADOWMAP_RESOLUTION, POINT_LIGHT_SHADOWMAP_RESOLUTION,
+            POINT_LIGHT_SHADOWMAP_MAX_RESOLUTION, POINT_LIGHT_SHADOWMAP_MAX_RESOLUTION,
             6, 1, TextureDimension::CubeMap,
             RenderTextureUsage::ColorBuffer, DXGI_FORMAT_R16_UNORM, TextureState::Read
             );
@@ -257,7 +261,7 @@ bool Scene::LoadLight(const nlohmann::json& sceneConfig, const GraphicContext& c
 
         spotLight.ShadowMap = make_unique<RenderTexture>(
             context.device, context.descriptorHeap,
-            SPOT_LIGHT_SHADOWMAP_RESOLUTION, SPOT_LIGHT_SHADOWMAP_RESOLUTION,
+            SPOT_LIGHT_SHADOWMAP_MAX_RESOLUTION, SPOT_LIGHT_SHADOWMAP_MAX_RESOLUTION,
             1, 1, TextureDimension::Tex2D,
             RenderTextureUsage::DepthBuffer, DXGI_FORMAT_D16_UNORM, TextureState::Read
             );
@@ -308,11 +312,13 @@ bool Scene::LoadCamera(const nlohmann::json& sceneConfig, const GraphicContext& 
     float zNear = static_cast<float>(cameraConfig["Near"]);
     float zFar = static_cast<float>(cameraConfig["Far"]);
 
-    float shadowDistance = static_cast<float>(cameraConfig["ShadowDistance"]);
+    auto& shadowConfig = sceneConfig["SunShadow"];
 
-    int cascadeCount = min(MAX_CASCADE_COUNT, static_cast<int>(cameraConfig["CascadeCount"]));
+    float shadowDistance = static_cast<float>(shadowConfig["ShadowDistance"]);
 
-    auto& cascadeConfig = cameraConfig["ShadowCascade"];
+    int cascadeCount = min(MAX_CASCADE_COUNT, static_cast<int>(shadowConfig["CascadeCount"]));
+
+    auto& cascadeConfig = shadowConfig["ShadowCascade"];
 
     array<float, MAX_CASCADE_COUNT> cascade;
     for (size_t i = 0; i < cascadeCount; i++)

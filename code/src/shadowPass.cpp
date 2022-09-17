@@ -124,7 +124,7 @@ void ShadowPass::PreparePass(const GraphicContext& context)
 
     
     mShadowDepthMap = make_unique<RenderTexture>(context.device, context.descriptorHeap, 
-        POINT_LIGHT_SHADOWMAP_RESOLUTION, POINT_LIGHT_SHADOWMAP_RESOLUTION,
+        POINT_LIGHT_SHADOWMAP_MAX_RESOLUTION, POINT_LIGHT_SHADOWMAP_MAX_RESOLUTION,
         6, 1, TextureDimension::Tex2D, RenderTextureUsage::DepthBuffer, DXGI_FORMAT_D32_FLOAT);
 }
 

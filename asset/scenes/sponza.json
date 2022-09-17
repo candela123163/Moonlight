@@ -11,16 +11,20 @@
         "Near": 0.3,
         "Far": 50.0,
         "Position": [0.0, 1.0, 0.0],
-        "Target": [1.0, 0.0, 0.0],
-        "ShadowDistance": 17.0,
-        "ShadowCascade": [0.12, 0.3, 0.5, 1.0],
-        "CascadeCount": 4
+        "Target": [1.0, 0.0, 0.0]
     },
 
     "Sun": {
         "Direction": [-1.0, -15.0, -3.0],
         "Color": [ 0.513, 0.494, 0.462 ],
         "Intensity":  10.0
+    },
+
+    "SunShadow": {
+        "ShadowDistance": 20.0,
+        "ShadowCascade": [0.1, 0.2, 0.467, 1.0],
+        "ShadowMapResolution": [1024, 1024, 2048, 2048],
+        "CascadeCount": 4
     },
 
     "PointLights":[
