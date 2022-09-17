@@ -134,7 +134,7 @@ BRDF IndirectBRDF(Surface surface)
     float2 LUTuv = float2(saturate(dot(surface.normal, surface.viewDir)), 1.0f - surface.roughness);
     float2 specularBRDFFactor = GetEnvSpecularBRDFFactor(LUTuv);
     
-    brdf.specular = f0 * specularBRDFFactor.x + specularBRDFFactor.y;
+    brdf.specular = f0 * specularBRDFFactor.x + specularBRDFFactor.yyy;
     brdf.diffuse = surface.albedo * Kd;
     
     return brdf;

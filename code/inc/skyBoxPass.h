@@ -16,7 +16,7 @@ private:
     enum class RootSignatureParam
     {
         CameraConstant = 0,
-        Texture2DTable = 1,
+        TextureCubeTable = 1,
 
         COUNT = 2
     };

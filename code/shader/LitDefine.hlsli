@@ -14,6 +14,8 @@ struct Surface
     float roughness;
     float shadowFade;
     float2 screenUV;
+    float ao;
+    float3 emissive;
 };
 
 struct Light

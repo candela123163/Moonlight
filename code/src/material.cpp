@@ -13,83 +13,131 @@ void Material::UpdateConstant(const GraphicContext& context)
     mDirtyCount--;
 
     MaterialConstant materialConstant;
-    materialConstant.AlbedoFactor = albedoFactor;
-    
-    materialConstant.NormalScale = normalScale;
-    materialConstant.NormalMapped = static_cast<int>(normalMapped);
-    materialConstant.MetallicFactor = metallicFactor;
-    materialConstant.RoughnessFactor = roughnessFactor;
+
+    materialConstant.NormalMapped = (int)normalMapped;
+    materialConstant.UseMetalRoughness = (int)useMetalRoughness;
+    materialConstant.UseEmissive = (int)useEmissive;
+    materialConstant.UseAO = (int)useAO;
 
     materialConstant.AlbedoMapIndex = albedoMap->GetSrvDescriptorData().HeapIndex;
     materialConstant.NormalMapIndex = normalMap->GetSrvDescriptorData().HeapIndex;
     materialConstant.MetalRoughMapIndex = metalRoughnessMap->GetSrvDescriptorData().HeapIndex;
+    materialConstant.AOMapIndex = aoMap->GetSrvDescriptorData().HeapIndex;
+
+    materialConstant.EmissiveMapIndex = emissiveMap->GetSrvDescriptorData().HeapIndex;
+    materialConstant.EmissiveFactor = emissiveFactor;
+
+    materialConstant.AlbedoFactor = albedoFactor;
+    
+    materialConstant.NormalScale = normalScale;
+    materialConstant.MetallicFactor = metallicFactor;
+    materialConstant.RoughnessFactor = roughnessFactor;
 
     context.frameResource->ConstantMaterial->CopyData(materialConstant, materialID);
+}
+
+Material::Material(int _materialID, const aiScene* scene, const GraphicContext& context)
+{
+    this->materialID = _materialID;
+
+    const aiMaterial* material = scene->mMaterials[_materialID];
+    aiString textureName;
+    aiColor4D albedoFactor;
+
+    aiReturn result;
+
+    // albeo
+    result = material->GetTexture(AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_BASE_COLOR_TEXTURE, &textureName);
+    filesystem::path texturePath;
+
+    if (result == aiReturn::aiReturn_SUCCESS)
+    {
+        texturePath = Globals::ImagePath / textureName.C_Str();
+    }
+    else
+    {
+        texturePath = Globals::ImagePath / DUMMY_TEXTURE;
+    }
+    material->Get(AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_BASE_COLOR_FACTOR, albedoFactor);
+    this->albedoMap = Texture::GetOrLoad(texturePath, true, context);
+    this->albedoFactor = XMFLOAT4(albedoFactor.r, albedoFactor.g, albedoFactor.b, albedoFactor.a);
+
+    // normal
+    result = material->GetTexture(aiTextureType::aiTextureType_NORMALS, 0, &textureName);
+    if (result == aiReturn::aiReturn_SUCCESS)
+    {
+        texturePath = Globals::ImagePath / textureName.C_Str();
+        this->normalMapped= true;
+    }
+    else
+    {
+        texturePath = Globals::ImagePath / DUMMY_TEXTURE;
+        this->normalMapped = false;
+    }
+    material->Get(AI_MATKEY_GLTF_TEXTURE_SCALE(aiTextureType_NORMALS, 0), this->normalScale);
+    this->normalMap = Texture::GetOrLoad(texturePath, false, context);
+    
+
+    // metallic & roughness
+    result = material->GetTexture(AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLICROUGHNESS_TEXTURE, &textureName);
+    if (result == aiReturn::aiReturn_SUCCESS)
+    {
+        texturePath = Globals::ImagePath / textureName.C_Str();
+        this->useMetalRoughness = true;
+    }
+    else
+    {
+        texturePath = Globals::ImagePath / DUMMY_TEXTURE;
+        this->useMetalRoughness = false;
+    }
+    this->metalRoughnessMap = Texture::GetOrLoad(texturePath, false, context);
+    material->Get(AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLIC_FACTOR, this->metallicFactor);
+    material->Get(AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_ROUGHNESS_FACTOR, this->roughnessFactor);
+
+    // emissive
+    result = material->GetTexture(aiTextureType_EMISSIVE, 0, &textureName);
+    if (result == aiReturn::aiReturn_SUCCESS)
+    {
+        texturePath = Globals::ImagePath / textureName.C_Str();
+        this->useEmissive = true;
+    }
+    else
+    {
+        texturePath = Globals::ImagePath / DUMMY_TEXTURE;
+        this->useEmissive = false;
+    }
+    this->emissiveMap = Texture::GetOrLoad(texturePath, true, context);
+    aiColor3D emissiveColor;
+    material->Get(AI_MATKEY_COLOR_EMISSIVE, emissiveColor);
+    this->emissiveFactor = XMFLOAT3(emissiveColor.r, emissiveColor.g, emissiveColor.b);
+
+    // ao
+    result = material->GetTexture(aiTextureType_LIGHTMAP, 0, &textureName);
+    if (result == aiReturn::aiReturn_SUCCESS)
+    {
+        texturePath = Globals::ImagePath / textureName.C_Str();
+        this->useAO = true;
+    }
+    else
+    {
+        texturePath = Globals::ImagePath / DUMMY_TEXTURE;
+        this->useAO = false;
+    }
+    this->aoMap = Texture::GetOrLoad(texturePath, false, context);
+    
 }
 
 Material* Material::GetOrLoad(int materiaIndex, const aiScene* scene, const GraphicContext& context)
 {
     if (!Globals::MaterialContainer.Contains(materiaIndex))
     {
-        const aiMaterial* material = scene->mMaterials[materiaIndex];
-        aiString textureName;
-        aiColor4D albedoFactor;
-        float normalScale = 1.0, metalFactor = 0.0, roughFactor = 1.0;
-        bool useNormal = true;
-        Texture* albedo = nullptr, * normal = nullptr, * metalicRough = nullptr;
-        aiReturn result;
-
-        // albeo
-        result = material->GetTexture(AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_BASE_COLOR_TEXTURE, &textureName);
-        filesystem::path texturePath;
-
-        if (result == aiReturn::aiReturn_SUCCESS)
-        {
-            texturePath = Globals::ImagePath / textureName.C_Str();
-        }
-        else
-        {
-            texturePath = Globals::ImagePath / DUMMY_TEXTURE;
-        }
-        albedo = Texture::GetOrLoad(texturePath, true, context);
-        material->Get(AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_BASE_COLOR_FACTOR, albedoFactor);
-
-        // normal
-        result = material->GetTexture(aiTextureType::aiTextureType_NORMALS, 0, &textureName);
-        if (result == aiReturn::aiReturn_SUCCESS)
-        {
-            texturePath = Globals::ImagePath / textureName.C_Str();
-            useNormal = true;
-        }
-        else
-        {
-            texturePath = Globals::ImagePath / DUMMY_TEXTURE;
-            useNormal = false;
-        }
-        normal = Texture::GetOrLoad(texturePath, false, context);
-        material->Get(AI_MATKEY_GLTF_TEXTURE_SCALE(aiTextureType_NORMALS, 0), normalScale);
-
-        // metallic & roughness
-        result = material->GetTexture(AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLICROUGHNESS_TEXTURE, &textureName);
-        if (result == aiReturn::aiReturn_SUCCESS)
-        {
-            texturePath = Globals::ImagePath / textureName.C_Str();
-        }
-        else
-        {
-            texturePath = Globals::ImagePath / DUMMY_TEXTURE;
-        }
-        metalicRough = Texture::GetOrLoad(texturePath, false, context);
-        material->Get(AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLIC_FACTOR, metalFactor);
-        material->Get(AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_ROUGHNESS_FACTOR, roughFactor);
-
+        
         return Globals::MaterialContainer.Insert(
             materiaIndex,
             make_unique<Material>(
                 materiaIndex,
-                albedo, XMFLOAT4(albedoFactor.r, albedoFactor.g, albedoFactor.b, albedoFactor.a),
-                normal, normalScale, useNormal,
-                metalicRough, metalFactor, roughFactor
+                scene,
+                context
                 )
         );
     }

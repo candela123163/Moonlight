@@ -48,8 +48,8 @@ Mesh* Mesh::GetOrLoad(int meshIndex, const aiScene* scene, int globalMeshIndex, 
         vector<Vertex> vertices;
         vector<UINT> indices;
 
-        float _min = numeric_limits<float>::max();
-        float _max = numeric_limits<float>::min();
+        constexpr float _min = numeric_limits<float>::max();
+        constexpr float _max = numeric_limits<float>::min();
         XMVECTOR vMin = XMLoadFloat3(get_rvalue_ptr(XMFLOAT3(_min, _min, _min)));
         XMVECTOR vMax = XMLoadFloat3(get_rvalue_ptr(XMFLOAT3(_max, _max, _max)));
 

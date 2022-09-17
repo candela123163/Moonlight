@@ -27,6 +27,28 @@ public:
         return mResource.size();
     }
 
+    std::vector<size_t> Keys() const
+    {
+        std::vector<size_t> keys(Size());
+        size_t i = 0;
+        for (const auto& entry : mResource)
+        {
+            keys[i++] = entry.first;
+        }
+        return keys;
+    }
+
+    std::vector<T*> Values() const
+    {
+        std::vector<T*> values(Size());
+        size_t i = 0;
+        for (const auto& entry : mResource)
+        {
+            values[i++] = entry.second.get();
+        }
+        return values;
+    }
+
 private:
     std::unordered_map<size_t, std::unique_ptr<T>> mResource;
 };

@@ -13,16 +13,24 @@ CBUFFER ObjectConstant
 
 CBUFFER MaterialConstant
 {
-    DirectX::XMFLOAT4 AlbedoFactor;
-    
-    float NormalScale;
     int NormalMapped;
-    float MetallicFactor;
-    float RoughnessFactor;
+    int UseMetalRoughness;
+    int UseEmissive;
+    int UseAO;
 
     int AlbedoMapIndex;
     int NormalMapIndex;
     int MetalRoughMapIndex;
+    int AOMapIndex;
+
+    int EmissiveMapIndex;
+    DirectX::XMFLOAT3 EmissiveFactor;
+
+    DirectX::XMFLOAT4 AlbedoFactor;
+    
+    float NormalScale;
+    float MetallicFactor;
+    float RoughnessFactor;
 };
 
 

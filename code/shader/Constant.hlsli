@@ -17,16 +17,24 @@ cbuffer ObjectConstant : register(bx)       \
 #define DEFINE_MATERIAL_CONSTANT(bx)        \
 cbuffer MaterialConstant : register(bx)     \
 {                                           \
-    float4 _AlbedoFactor;                   \
-                                            \
-    float _NormalScale;                     \
     int _NormalMapped;                      \
-    float _MetallicFactor;                  \
-    float _RoughnessFactor;                 \
+    int _UseMetalRoughness;                 \
+    int _UseEmissive;                       \
+    int _UseAO;                             \
                                             \
     int _AlbedoMapIndex;                    \
     int _NormalMapIndex;                    \
     int _MetalRoughMapIndex;                \
+    int _AOMapIndex;                        \
+                                            \
+    int _EmissiveMapIndex;                  \
+    float3 _EmissiveFactor;                 \
+                                            \
+    float4 _AlbedoFactor;                   \
+                                            \
+    float _NormalScale;                     \
+    float _MetallicFactor;                  \
+    float _RoughnessFactor;                 \
 }
 
 #define DEFINE_CAMERA_CONSTANT(bx)          \

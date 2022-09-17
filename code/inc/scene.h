@@ -12,7 +12,7 @@ struct GraphicContext;
 class Instance
 {
 public:
-    Instance(UINT id, DirectX::XMFLOAT4X4 ts, Material* material, Mesh* mesh);
+    Instance(UINT id, DirectX::XMMATRIX ts, Material* material, Mesh* mesh);
 
     Material* GetMaterial() const { return mMaterial; }
     Mesh* GetMesh() const { return mMesh; }
@@ -76,7 +76,7 @@ private:
     bool LoadLight(const nlohmann::json& sceneConfig, const GraphicContext& context);
     bool LoadCamera(const nlohmann::json& sceneConfig, const GraphicContext& context);
     bool LoadInstance(const nlohmann::json& sceneConfig, const GraphicContext& context);
-    bool LoadInstance(const aiNode* node, const aiScene* scene, const GraphicContext& context);
+    bool LoadInstance(const aiNode* node, const aiScene* scene, DirectX::XMMATRIX transform, const GraphicContext& context);
     
     void UpdateInstanceConstant(const GraphicContext& context);
     void UpdateMaterialConstant(const GraphicContext& context);

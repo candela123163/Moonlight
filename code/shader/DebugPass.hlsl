@@ -46,7 +46,7 @@ float4 ps(PostProc_VSOut pin) : SV_TARGET
         uv.x *= 2.0f;
         uv.y = uv.y * 2.0f - 1.0f;
         
-        return float4(_2DMaps[29].SampleLevel(_SamplerPointClamp, uv, 0).rrr, 1.0f);
+        return float4(_2DMaps[37].SampleLevel(_SamplerLinearClamp, uv, 0).rgb, 1.0f);
 
     }
     else
@@ -54,7 +54,7 @@ float4 ps(PostProc_VSOut pin) : SV_TARGET
         uv.x = uv.x * 2.0f - 1.0f;
         uv.y = uv.y * 2.0f - 1.0f;
             
-        return float4(_2DMaps[30].SampleLevel(_SamplerPointClamp, uv, 0).rrr, 1.0f);
+        return float4(_2DMaps[36].SampleLevel(_SamplerLinearClamp, uv, 0).rgb, 1.0f);
 
     }
     

@@ -1,5 +1,5 @@
 {
-    "Instances": "Sponza.gltf",
+    "Instances": "sponza.gltf",
 
     "Skybox" : {
         "Mesh": "box.obj",
@@ -28,15 +28,6 @@
     ],
 
     "SpotLights":[
-        {
-            "Position": [ 0.0, 2.0, 0.5 ],
-            "Color": [ 0.89, 0.72, 0.05 ],
-            "Intensity": 8.0,
-            "Direction": [ 1.0, -1.0, 1.0 ],
-            "Near": 0.3,
-            "Range": 8.0,
-            "OutterAngle": 60.0,
-            "InnerAngle": 45.0
-        }
+  
     ]
 }

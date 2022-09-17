@@ -125,7 +125,7 @@ void IBLPreprocessPass::PreparePass(const GraphicContext& context)
         reinterpret_cast<BYTE*>(ps2->GetBufferPointer()),
         ps2->GetBufferSize()
     };
-    ThrowIfFailed(context.device->CreateGraphicsPipelineState(&irradiancePsoDesc, IID_PPV_ARGS(mPrefilterPSO.GetAddressOf())));
+    ThrowIfFailed(context.device->CreateGraphicsPipelineState(&prefilterPsoDesc, IID_PPV_ARGS(mPrefilterPSO.GetAddressOf())));
 }
 
 void IBLPreprocessPass::DrawPass(const GraphicContext& context)
@@ -177,7 +177,7 @@ void IBLPreprocessPass::PreprocessPass(const GraphicContext& context)
     for (size_t filterLevel = 0; filterLevel < mPrefilterLevel; filterLevel++)
     {
         // mip 0 for smoothest, mip upper bound for roughest
-        float roughness = max(0.001f, 1.0f - static_cast<float>(filterLevel) / (mPrefilterLevel - 1));
+        float roughness = max(0.001f, static_cast<float>(filterLevel) / (mPrefilterLevel - 1));
         constant32[0] = roughness;
         constant32[1] = mPrefilterMapSize >> filterLevel;
         context.commandList->SetGraphicsRoot32BitConstants((int)RootSignatureParam::Constant32, 2, &constant32, 0);

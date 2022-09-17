@@ -13,7 +13,7 @@ void SkyboxPass::PreparePass(const GraphicContext& context)
 
     CD3DX12_ROOT_PARAMETER slotRootParameter[(int)RootSignatureParam::COUNT];
     slotRootParameter[(int)RootSignatureParam::CameraConstant].InitAsConstantBufferView(0);
-    slotRootParameter[(int)RootSignatureParam::Texture2DTable].InitAsDescriptorTable(1, &texTable, D3D12_SHADER_VISIBILITY_PIXEL);
+    slotRootParameter[(int)RootSignatureParam::TextureCubeTable].InitAsDescriptorTable(1, &texTable, D3D12_SHADER_VISIBILITY_PIXEL);
 
     // create root signature
     CD3DX12_ROOT_SIGNATURE_DESC rootSignatureDesc;
@@ -103,7 +103,7 @@ void SkyboxPass::DrawPass(const GraphicContext& context)
     const SkyBox& skyBox = context.scene->GetSkybox();
 
     context.commandList->SetGraphicsRootConstantBufferView((int)RootSignatureParam::CameraConstant, context.frameResource->ConstantCamera->GetElementGPUAddress());
-    context.commandList->SetGraphicsRootDescriptorTable((int)RootSignatureParam::Texture2DTable, skyBox.texture->GetSrvDescriptorData().GPUHandle);
+    context.commandList->SetGraphicsRootDescriptorTable((int)RootSignatureParam::TextureCubeTable, skyBox.texture->GetSrvDescriptorData().GPUHandle);
 
     skyBox.mesh->Draw(context.commandList);
 }

@@ -33,10 +33,7 @@ VertexOut vs(float3 posL : POSITION)
 #define SAMPLE_COUNT 1024
 
 float4 ps(VertexOut pin) : SV_TARGET
-{
-    // Solid angle associated to a texel of the cubemap
-    float saTexel = FOUR_PI / (6.0f * _Resolution * _Resolution);
-    
+{    
     // make the simplyfying assumption that V equals R equals the normal 
     float3 N = normalize(pin.posW);
     float3 R = N;
@@ -55,20 +52,9 @@ float4 ps(VertexOut pin) : SV_TARGET
         float NdotL = saturate(dot(N, L));
         
         if (NdotL > 0.0f)
-        {
-            float D = GGX_D(N, hWorld, _Roughness);
-            float NdotH = saturate(dot(N, hWorld));
-            float HdotV = saturate(dot(hWorld, V));
-            float pdf = D * NdotH / (4.0f * HdotV + 0.0001f);
-            
-            // choose envmap mipLevel accroding sample pdf
-            // this code is from
-            // https://learnopengl.com/PBR/IBL/Specular-IBL
-            float saSample = 1.0f / (float(SAMPLE_COUNT) * pdf + 0.0001);
-            float mipLevel = 0.5f * log2(saSample / saTexel);
-            
+        {            
             // weight by dot(N, L)
-            prefilteredColor += _EnvMap.SampleLevel(_SamplerLinearClamp, L, mipLevel).rgb * NdotL;
+            prefilteredColor += _EnvMap.Sample(_SamplerLinearClamp, L).rgb * NdotL;
             totalWeight += NdotL;
         }
     }

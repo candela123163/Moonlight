@@ -34,16 +34,17 @@ DEFINE_SHADOW_CONSTANT(b5)
 DEFINE_RENDER_TARGET_PARAM_CONSTANT(b6)
 // ---------------------------------------------------------------
 
-
+#define MIN_ROUGHNESS 0.05
+#define MAX_ROUGHNESS 0.95
 // ------------------ getters ------------------------------------
 float4 GetBaseColor(float2 uv)
 {
-    return _2DMaps[_AlbedoMapIndex].Sample(_SamplerAnisotropicWrap, uv) * _AlbedoFactor;
+    return _2DMaps[_AlbedoMapIndex].Sample(_SamplerLinearWrap, uv) * _AlbedoFactor;
 }
 
 float3 GetNormalTS(float2 uv)
 {
-    float3 rawNormal = _2DMaps[_NormalMapIndex].Sample(_SamplerAnisotropicWrap, uv).rgb;
+    float3 rawNormal = _2DMaps[_NormalMapIndex].Sample(_SamplerLinearWrap, uv).rgb;
     rawNormal = rawNormal * 2.0f - 1.0f;
     rawNormal.xy *= _NormalScale;
     return normalize(rawNormal);
@@ -51,12 +52,26 @@ float3 GetNormalTS(float2 uv)
 
 float GetMetallic(float2 uv)
 {
-    return _2DMaps[_MetalRoughMapIndex].Sample(_SamplerAnisotropicWrap, uv).b * _MetallicFactor;
+    if (_UseMetalRoughness)
+    {
+        return _2DMaps[_MetalRoughMapIndex].Sample(_SamplerLinearWrap, uv).b * _MetallicFactor;
+    }
+    else
+    {
+        return 0.0f;
+    }
 }
 
 float GetRoughness(float2 uv)
 {
-    return _2DMaps[_MetalRoughMapIndex].Sample(_SamplerAnisotropicWrap, uv).g * _RoughnessFactor;
+    if(_UseMetalRoughness)
+    {
+        return clamp(_2DMaps[_MetalRoughMapIndex].Sample(_SamplerLinearWrap, uv).g * _RoughnessFactor, MIN_ROUGHNESS, MAX_ROUGHNESS);
+    }
+    else
+    {
+        return 1.0f;
+    }
 }
 
 bool NormalMapped()
@@ -76,7 +91,8 @@ float3 GetEnvIrradiance(float3 dir)
 
 float3 GetEnvPrefilteredColor(float3 dir, float roughness)
 {
-    return _CubeMaps[_PrefilterMapIndex].SampleLevel(_SamplerLinearClamp, dir, roughness * _PrefilterMapMipCount);
+    roughness *= 1.7f - 0.7 * roughness;
+    return _CubeMaps[_PrefilterMapIndex].SampleLevel(_SamplerLinearClamp, dir, roughness * (_PrefilterMapMipCount - 1)).rgb;
 }
 
 float GetSpotShadowMapValue(uint index, float2 uv, float compareDepth)
@@ -130,9 +146,33 @@ float4 GetSunCascadeShadowMapSize(uint cascade)
     return float4(1.0f / w, 1.0f / h, w, h);
 }
 
-float GetAO(float2 uv)
+float GetSSAO(float2 uv)
 {
     return saturate(_2DMaps[_SSAOMapIndex].SampleLevel(_SamplerLinearClamp, uv, 0).r);
+}
+
+float GetTexturedAO(float2 uv)
+{
+    if (_UseAO)
+    {
+        return saturate(_2DMaps[_AOMapIndex].Sample(_SamplerLinearWrap, uv).r);
+    }
+    else
+    {
+        return 1.0f;
+    }
+}
+
+float3 GetEmissive(float2 uv)
+{
+    if(_UseEmissive)
+    {
+        return _2DMaps[_EmissiveMapIndex].Sample(_SamplerLinearWrap, uv).rgb * _EmissiveFactor;
+    }
+    else
+    {
+        return (0.0f).rrr;
+    }
 }
 // ---------------------------------------------------------------
 #endif

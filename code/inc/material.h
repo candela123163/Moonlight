@@ -18,6 +18,8 @@ public:
         metalRoughnessMap(_metalRough), metallicFactor(_metalFactor), roughnessFactor(_roughFactor)
     {}
 
+    Material(int _materialID, const aiScene* scene, const GraphicContext& context);
+
     UINT GetID() const { return materialID; }
 
     bool StillDirty() const { return mDirtyCount > 0; }
@@ -40,4 +42,12 @@ private:
     Texture* metalRoughnessMap = nullptr;
     float metallicFactor = 1.0f;
     float roughnessFactor = 1.0f;
+    bool useMetalRoughness = false;
+
+    Texture* emissiveMap = nullptr;
+    DirectX::XMFLOAT3 emissiveFactor = DirectX::XMFLOAT3(1.0, 1.0, 1.0);
+    bool useEmissive = false;
+
+    Texture* aoMap = nullptr;
+    bool useAO = false;
 };

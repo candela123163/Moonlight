@@ -68,25 +68,11 @@ float4 ps(VertexOut pin) : SV_TARGET
     surface.viewDir = normalize(_EyePosW.xyz - pin.posW);
     surface.shadowFade = GetShadowGlobalFade(surface.depth);
     surface.screenUV = pin.posH.xy * _RenderTargetSize.zw;
-        
+    surface.ao = GetTexturedAO(pin.uv);
+    surface.emissive = GetEmissive(pin.uv);
+                
     float3 radiance = 0.0f;
-        
-    //Light light = GetSun(surface);
-    
-    //float3 lightDir = light.direction;
-    //float Ks;
-    
-    //float3 h = normalize(surface.viewDir + lightDir);
-    //float D = GGX_D(surface.normal, h, surface.roughness);
-    //float3 F = Fresnel(surface.viewDir, h, MetalWorkflowF0(surface.albedo, surface.metallic));
-    //float G = SchlickGGX_G2(lightDir, surface.viewDir, surface.normal, surface.roughness);
-    //Ks = F;
-    //float ndotV = saturate(dot(surface.normal, surface.viewDir));
-    //float ndotL = saturate(dot(surface.normal, lightDir));
-    ////return (D * F * G) / (4.0f * max(0.001f, ndotV * ndotL));
-    
-    //return any(D > 1000000.0f ? 1.0f : 0.0f);
-    
+
     //direct Light
     radiance += Shading(surface, GetSun(surface));
     
@@ -102,6 +88,9 @@ float4 ps(VertexOut pin) : SV_TARGET
     
     // indirect Light by image
     radiance += EnvShading(surface);
+    
+    // emissive
+    radiance += surface.emissive;
 
     return float4(radiance, 1.0f);
 }

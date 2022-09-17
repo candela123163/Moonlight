@@ -8,10 +8,10 @@ using namespace std;
 using namespace DirectX;
 using namespace nlohmann;
 
-Instance::Instance(UINT id, DirectX::XMFLOAT4X4 ts, Material* material, Mesh* mesh) :
+Instance::Instance(UINT id, DirectX::XMMATRIX ts, Material* material, Mesh* mesh) :
     mInstanceID(id), mMaterial(material), mMesh(mesh)
 {
-    mTransform = XMLoadFloat4x4(&ts);
+    mTransform = ts;
     XMVECTOR determinant;
     mInvTransform = XMMatrixInverse(&determinant, mTransform);
 }
@@ -335,30 +335,34 @@ bool Scene::LoadInstance(const nlohmann::json& sceneConfig, const GraphicContext
     Assimp::Importer importer;
     const aiScene* scene = importer.ReadFile(instancesFilePath.string(), aiProcess_Triangulate | aiProcess_OptimizeMeshes | aiProcess_CalcTangentSpace | aiProcess_FlipUVs);
 
-    return LoadInstance(scene->mRootNode, scene, context);
+    return LoadInstance(scene->mRootNode, scene, XMMatrixIdentity(), context);
 }
 
-bool Scene::LoadInstance(const aiNode* node, const aiScene* scene, const GraphicContext& context)
+bool Scene::LoadInstance(const aiNode* node, const aiScene* scene, DirectX::XMMATRIX transform, const GraphicContext& context)
 {
-    XMFLOAT4X4 transform;
+    
     const aiMatrix4x4& t = node->mTransformation;
-    transform._11 = t.a1; transform._12 = t.a2; transform._13 = t.a3; transform._14 = t.a4;
-    transform._21 = t.b1; transform._22 = t.b2; transform._23 = t.b3; transform._24 = t.b4;
-    transform._31 = t.c1; transform._32 = t.c2; transform._33 = t.c3; transform._34 = t.c4;
-    transform._41 = t.d1; transform._42 = t.d2; transform._43 = t.d3; transform._44 = t.d4;
+
+    XMMATRIX localTransform(
+        t.a1, t.b1, t.c1, t.d1,
+        t.a2, t.b2, t.c2, t.d2,
+        t.a3, t.b3, t.c3, t.d3,
+        t.a4, t.b4, t.c4, t.d4
+    );
 
     for (size_t i = 0; i < node->mNumMeshes; i++)
     {
-        Mesh* mesh = Mesh::GetOrLoad(i, scene, Globals::MeshContainer.Size(), context);
-        Material* material = Material::GetOrLoad(scene->mMeshes[i]->mMaterialIndex, scene, context);
+        int meshIdx = node->mMeshes[i];
+        Mesh* mesh = Mesh::GetOrLoad(meshIdx, scene, Globals::MeshContainer.Size(), context);
+        Material* material = Material::GetOrLoad(scene->mMeshes[meshIdx]->mMaterialIndex, scene, context);
         mInstances.push_back(
-            make_unique<Instance>(i, transform, material, mesh)
+            make_unique<Instance>(mInstances.size(), XMMatrixMultiply(transform, localTransform), material, mesh)
         );
     }
 
     for (size_t i = 0; i < node->mNumChildren; i++)
     {
-        if (!LoadInstance(node->mChildren[i], scene, context)) 
+        if (!LoadInstance(node->mChildren[i], scene, XMMatrixMultiply(transform, localTransform), context))
         {
             return false;
         }
@@ -376,9 +380,10 @@ void Scene::UpdateInstanceConstant(const GraphicContext& context)
 
 void Scene::UpdateMaterialConstant(const GraphicContext& context)
 {
-    for (auto& instance : mInstances)
+
+    for (auto material : Globals::MaterialContainer.Values())
     {
-        instance->GetMaterial()->UpdateConstant(context);
+        material->UpdateConstant(context);
     }
 }
 
