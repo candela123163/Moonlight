@@ -1,0 +1,1 @@
+start ./x64/bin/TinyRenderer.exe
