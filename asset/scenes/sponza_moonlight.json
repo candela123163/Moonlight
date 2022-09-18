@@ -1,0 +1,87 @@
+{
+    "Instances": "sponza.gltf",
+
+    "Skybox" : {
+        "Mesh": "box.obj",
+        "Cubemap" : "moon.dds"
+    },
+
+    "Camera":{
+        "FOVY": 60.0,
+        "Near": 0.3,
+        "Far": 50.0,
+        "Position": [-8.183, 1.261, -0.01],
+        "Target": [-7.192, 1.361, -0.113]
+    },
+
+    "Sun": {
+        "Direction": [-0.695, -0.995, -0.145],
+        "Color": [ 0.592, 0.741, 0.956 ],
+        "Intensity":  1.2
+    },
+
+    "SunShadow": {
+        "ShadowDistance": 20.0,
+        "ShadowCascade": [0.1, 0.2, 0.467, 1.0],
+        "ShadowMapResolution": [1024, 1024, 2048, 2048],
+        "CascadeCount": 4
+    },
+
+    "PointLights":[
+        {
+            "Color": [0.984, 0.776, 0.419],
+            "Intensity": 20.0,
+            "Position": [5.808, 3.867, -0.264],
+            "Near": 0.01,
+            "Range": 10.0
+        }
+    ],
+
+    "SpotLights":[
+        {
+            "Color": [0.984, 0.776, 0.419],
+            "Intensity": 20.0,
+            "Position": [7.069, 1.352, -0.300],
+            "Direction":[0.992, 0.116, 0.001],
+            "Near": 0.01,
+            "Range": 4.0,
+            "OutterAngle": 90,
+            "InnerAngle": 60
+        },
+
+        {
+            "Color": [0.984, 0.776, 0.419],
+            "Intensity": 20.0,
+            "Position": [-8.595, 2.597, -0.526],
+            "Direction":[-0.882, -0.471, -0.006],
+            "Near": 0.01,
+            "Range": 4.0,
+            "OutterAngle": 90,
+            "InnerAngle": 60
+        },
+
+
+        {
+            "Color": [0.984, 0.776, 0.419],
+            "Intensity": 20.0,
+            "Position": [-11.440, 2.511, -3.500],
+            "Direction":[0.966, -0.257, -0.002],
+            "Near": 0.01,
+            "Range": 12.0,
+            "OutterAngle": 60,
+            "InnerAngle": 45
+        },
+
+        {
+            "Color": [0.984, 0.776, 0.419],
+            "Intensity": 20.0,
+            "Position": [-11.440, 2.511, 3.500],
+            "Direction":[0.949, -0.310, -0.044],
+            "Near": 0.01,
+            "Range": 12.0,
+            "OutterAngle": 60,
+            "InnerAngle": 45
+        }
+
+    ]
+}

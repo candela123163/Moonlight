@@ -32,17 +32,24 @@ void Instance::UpdateConstant(const GraphicContext& context)
     context.frameResource->ConstantObject->CopyData(objectConstant, mInstanceID);
 }
 
-bool Scene::Load(const filesystem::path& filePath, const GraphicContext& context)
+bool Scene::Load(const GraphicContext& context)
 {
-    ifstream file(filePath.c_str(), fstream::in);
-    assert(file.good());
+    ifstream configFile(Globals::ConfigFile, fstream::in);
+    assert(configFile.good());
+    json configJson = json::parse(configFile);
 
-    json sceneConfig = json::parse(file);
+    string sceneName = configJson["SceneFile"];
+    filesystem::path sceneFilePath(Globals::ScenePath / sceneName);
 
-    return  LoadCamera(sceneConfig, context) &&
-            LoadLight(sceneConfig, context) &&
-            LoadSkyBox(sceneConfig, context) &&
-            LoadInstance(sceneConfig, context);
+    ifstream sceneFile(sceneFilePath, fstream::in);
+    assert(sceneFile.good());
+
+    json sceneJson = json::parse(sceneFile);
+
+    return  LoadCamera(sceneJson, context) &&
+            LoadLight(sceneJson, context) &&
+            LoadSkyBox(sceneJson, context) &&
+            LoadInstance(sceneJson, context);
 }
 
 void Scene::OnLoadOver(const GraphicContext& context) 
@@ -140,12 +147,12 @@ bool Scene::LoadLight(const nlohmann::json& sceneConfig, const GraphicContext& c
     mDirectionalLight.Intensity = static_cast<float>(sunConfig["Intensity"]);
 
     auto& directionConfig = sunConfig["Direction"];
-    XMVECTOR sunDirection = XMVector4Normalize(XMVectorSet(
+    XMVECTOR sunDirection = XMVectorSet(
         static_cast<float>(directionConfig[0]),
         static_cast<float>(directionConfig[1]),
         static_cast<float>(directionConfig[2]),
         0.0f
-    ));
+    );
     XMStoreFloat3(&mDirectionalLight.Direction, sunDirection);
     
     context.renderOption->SunIntensity = mDirectionalLight.Intensity;

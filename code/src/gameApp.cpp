@@ -316,7 +316,7 @@ bool GameApp::InitGraphic()
 	
 	PreparePasses();
 	
-	mScene.Load(Globals::ScenePath / "sponza.json", mGraphicContext);
+	mScene.Load(mGraphicContext);
 
 	ThrowIfFailed(mCommandList->Close());
 	ID3D12CommandList* cmdsLists[] = { mCommandList.Get() };

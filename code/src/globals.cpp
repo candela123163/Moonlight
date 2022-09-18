@@ -78,6 +78,7 @@ namespace Globals
 
 	};
 
+	std::filesystem::path ConfigFile("config.json");
 	std::filesystem::path ShaderPath("code/shader");
 	std::filesystem::path AssetPath("asset");
 	std::filesystem::path ImagePath(AssetPath / "images");

@@ -1,0 +1,37 @@
+{
+    "Instances": "MetalRoughSpheres.gltf",
+
+    "Skybox" : {
+        "Mesh": "box.obj",
+        "Cubemap" : "Cubemap_LancellottiChapel.dds"
+    },
+
+    "Camera":{
+        "FOVY": 60.0,
+        "Near": 0.3,
+        "Far": 50.0,
+        "Position": [-0.4886, 2.693, -11.423],
+        "Target": [-0.485, 2.447, -10.454]
+    },
+
+    "Sun": {
+        "Direction": [0.256, -0.228, 0.171],
+        "Color": [ 0.952, 0.737, 0.380 ],
+        "Intensity":  7.0
+    },
+
+    "SunShadow": {
+        "ShadowDistance": 30.0,
+        "ShadowCascade": [1.0],
+        "ShadowMapResolution": [1024],
+        "CascadeCount": 1
+    },
+
+    "PointLights":[
+
+    ],
+
+    "SpotLights":[
+  
+    ]
+}

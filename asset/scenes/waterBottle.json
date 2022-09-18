@@ -1,0 +1,37 @@
+{
+    "Instances": "WaterBottle.gltf",
+
+    "Skybox" : {
+        "Mesh": "box.obj",
+        "Cubemap" : "Cubemap_LancellottiChapel.dds"
+    },
+
+    "Camera":{
+        "FOVY": 60.0,
+        "Near": 0.01,
+        "Far": 50.0,
+        "Position": [0.339, 0.255, 0.121],
+        "Target": [-0.475, -0.237, -0.185]
+    },
+
+    "Sun": {
+        "Direction": [-0.140, -0.935, -0.286],
+        "Color": [ 0.952, 0.737, 0.380 ],
+        "Intensity":  10.0
+    },
+
+    "SunShadow": {
+        "ShadowDistance": 10.0,
+        "ShadowCascade": [1.0],
+        "ShadowMapResolution": [1024],
+        "CascadeCount": 1
+    },
+
+    "PointLights":[
+
+    ],
+
+    "SpotLights":[
+  
+    ]
+}

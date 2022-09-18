@@ -1,0 +1,37 @@
+{
+    "Instances": "DamagedHelmet.gltf",
+
+    "Skybox" : {
+        "Mesh": "box.obj",
+        "Cubemap" : "Cubemap_LancellottiChapel.dds"
+    },
+
+    "Camera":{
+        "FOVY": 60.0,
+        "Near": 0.3,
+        "Far": 50.0,
+        "Position": [0.277, 0.778, 3.334],
+        "Target": [0.347, 0.540, 2.365]
+    },
+
+    "Sun": {
+        "Direction": [-0.170, -0.710, -0.186],
+        "Color": [ 0.952, 0.737, 0.380 ],
+        "Intensity":  10.0
+    },
+
+    "SunShadow": {
+        "ShadowDistance": 10.0,
+        "ShadowCascade": [1.0],
+        "ShadowMapResolution": [1024],
+        "CascadeCount": 1
+    },
+
+    "PointLights":[
+
+    ],
+
+    "SpotLights":[
+  
+    ]
+}

@@ -47,6 +47,7 @@ namespace Globals
     extern const std::array<const CD3DX12_STATIC_SAMPLER_DESC, 8> StaticSamplers;
 
     // path related
+    extern std::filesystem::path ConfigFile;
     extern std::filesystem::path ShaderPath;
     extern std::filesystem::path AssetPath;
     extern std::filesystem::path ImagePath;

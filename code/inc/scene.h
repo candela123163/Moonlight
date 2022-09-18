@@ -45,7 +45,7 @@ struct SkyBox
 class Scene
 {
 public:
-    bool Load(const std::filesystem::path& filePath, const GraphicContext& context);
+    bool Load(const GraphicContext& context);
     void OnLoadOver(const GraphicContext& context);
     void OnUpdate(const GraphicContext& context);
 

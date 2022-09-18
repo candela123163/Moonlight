@@ -67,6 +67,8 @@ void GUIPass::DrawPass(const GraphicContext& context)
         ImGui::DragFloat("Motion Weight", &option->TAAMotionWeight, 10.0f, 100.0f, 5000.0f);
         ImGui::DragFloat("Sharpness", &option->TAASharpness, 0.001f, 0.0f, 0.5f);
     }
+
+    
     ImGui::End();
 
     ImGui::Render();

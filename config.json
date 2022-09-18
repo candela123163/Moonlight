@@ -1,0 +1,7 @@
+{
+	"_comment0": "Specify a FILE which locate on ./asset/scenes ",
+	"_comment1": "Available: [sponza_daylight.json] [sponza_moonlight.json] [damagedHelmet.json] [waterBottle.json] [spheres.json]",
+	"_comment2": "You can also make your own scene file",
+	
+	"SceneFile": "sponza_daylight.json"
+}

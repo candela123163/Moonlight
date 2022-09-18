@@ -11,7 +11,7 @@ struct DirectionalLight
     DirectX::XMFLOAT3 Direction;
     std::unique_ptr<RenderTexture> ShadowMaps[MAX_CASCADE_COUNT];
 
-    float ShadowBias = 1.0f;
+    float ShadowBias = 1.5f;
     bool castShadow = true;
 };
 
@@ -74,6 +74,6 @@ struct SpotLight
     DirectX::XMMATRIX InvViewProject;
     DirectX::BoundingFrustum Frustum;
 
-    float ShadowBias = 1.0f;
+    float ShadowBias = 1.5f;
     bool castShadow = true;
 };
