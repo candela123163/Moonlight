@@ -1,60 +1,65 @@
-# TinyRenderer 简介
-使用CPP 17及DirectX3D 12编写的实时渲染器
+<h1 align="center">
+  TinyRenderer
+</h1>
 
-# Features
-- 支持gltf格式文件渲染
+**This is a realtime renderer wirtten with cpp 17 and dx12, available for Windows.**
 
-- PBR metal workflow shading
-![csm](/asset/screenshot/pbr1.png)
-![csm](/asset/screenshot/pbr2.png)
-![csm](/asset/screenshot/pbr3.png)
+![moonlight](/asset/screenshot/moonlight.png)
 
-- 点光源、射灯、平行光 光照及阴影
+# ⭐️Features
+- Support **glTF**
+
+- Frustum Culling
+
+- Metal workflow Physically based rendering(PBR)
+![pbr1](/asset/screenshot/pbr1.png)
+![pbr2](/asset/screenshot/pbr2.png)
+![pbr3](/asset/screenshot/pbr3.png)
+
+- Point & Spot & Directional Lighting and shadowing
 ![csm](/asset/screenshot/pointLight.png)
 ![csm](/asset/screenshot/spotLight.png)
 
-- IBL
+- Image-based Lighting(IBL)
+  - Direct lighting only
+  ![withoutIBL](/asset/screenshot/withoutIBL.png)
+  - Plus IBL
+  ![IBL](/asset/screenshot/IBL.png)
 
-仅直接光照
-![csm](/asset/screenshot/withoutIBL.png)
-直接光照+IBL
-![csm](/asset/screenshot/IBL.png)
-
-- 高质量平行光阴影 CSM + PCF
+- Percentage closer filtering(PCF)
+- Cascade shadow map(CSM) 
 ![csm](/asset/screenshot/csm.png)
 
-- HDR + Tone mapping
+- HDR rendering and Tone mapping
 
 - Bloom
-![csm](/asset/screenshot/bloom.png)
+![bloom](/asset/screenshot/bloom.png)
 
-- SSAO
+- Screen space ambient occlusion(SSAO)
+  - without SSAO
+  ![withoutAO](/asset/screenshot/withoutAO.png)
+  - with SSAO
+  ![ssao](/asset/screenshot/ssao.png)
 
-无SSAO
-![csm](/asset/screenshot/withoutAO.png)
-开启SSAO
-![csm](/asset/screenshot/ssao.png)
+- ~~FXAA~~ (**NOT** temporal stable, decrepted)
 
-- FXAA(decrepited) NOT temporal stable
+- Temporal anti-aliasing(TAA)
+  - without AA
+  ![withoutAA](/asset/screenshot/withoutAA.png)
+  - Enable TAA
+  ![taa](/asset/screenshot/taa.png)
 
-- TAA temporal stable
-
-无AA
-![csm](/asset/screenshot/withoutAA.png)
-开启TAA
-![csm](/asset/screenshot/taa.png)
-
-# 依赖项
+# 📚Dependencies 
 - assimp
 - directxtk12
-- nlohmann
+- nlohmann json
 - imgui
 
-# Build
-- 使用VS2022打开TinyRenderer.sln构建工程
-- \x64\bin包含已编译的可执行文件
-- 运行run.bat打开渲染器
+# 🔧Build
+- You need Windows 10 and Visual Studio 2022 (maybe lower version is work fine too)
+- Double click **TinyRenderer.sln**
 
-# 配置
-- ./config.json中指定渲染的场景
-- ./asset/scenes中*.json文件为场景文件，可配置场景模型、光照、相机等参数，可参照来创建你自己的场景文件进行渲染
+# 🚀Quick Start
+- Take a look at ***./config.json***, set **SceneFile** to specity the scene to render.
+- Execute **run.bat**, this is all!
+- If you want to render your own scene, add a file to ***./asset/scenes/***, and set it in ***./config.json***
