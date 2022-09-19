@@ -41,7 +41,7 @@
   - with SSAO
   ![ssao](/asset/screenshot/ssao.png)
 
-- ~~FXAA~~ (**NOT** temporal stable, decrepted)
+- ~~FXAA~~ (**NOT** temporal stable, deprecated)
 
 - Temporal anti-aliasing(TAA)
   - without AA
@@ -63,3 +63,6 @@
 - Take a look at ***./config.json***, set **SceneFile** to specity the scene to render.
 - Execute **run.bat**, this is all!
 - If you want to render your own scene, add a file to ***./asset/scenes/***, and set it in ***./config.json***
+
+# ⚖️License
+[MIT License](LICENSE)
