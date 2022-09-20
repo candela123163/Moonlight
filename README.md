@@ -2,7 +2,7 @@
   TinyRenderer
 </h1>
 
-**This is a realtime renderer wirtten with cpp 17 and dx12, available for Windows.**
+**This is a realtime renderer written with cpp 17 and dx12, available for Windows.**
 
 ![moonlight](/asset/screenshot/moonlight.png)
 

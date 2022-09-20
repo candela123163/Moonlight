@@ -7,3 +7,5 @@
 /code/shader/.vs
 /x64/Release
 /code/inc/.vs
+/x64/ReleaseBin
+*.pdb

@@ -44,8 +44,6 @@ float4 ps(VertexOut pin) : SV_TARGET
     
     float4 baseColor = GetBaseColor(pin.uv);
     
-    clip(baseColor.a - 0.5f);
-    
     float3 normalW;
     if (NormalMapped())
     {

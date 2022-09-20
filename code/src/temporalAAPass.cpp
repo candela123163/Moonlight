@@ -79,6 +79,7 @@ void TAAPass::PreparePass(const GraphicContext& context)
     basePsoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
     basePsoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
     basePsoDesc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_ALWAYS;
+    basePsoDesc.DepthStencilState.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
     basePsoDesc.SampleMask = UINT_MAX;
     basePsoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
     basePsoDesc.NumRenderTargets = 1;
