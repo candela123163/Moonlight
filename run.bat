@@ -1,1 +1,1 @@
-start ./x64/bin/TinyRenderer.exe
+start ./bin/x64/MoonlightRenderer.exe

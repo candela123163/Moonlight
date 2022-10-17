@@ -12,7 +12,7 @@ namespace Globals
     // window related
     #define WINDOW_WIDTH 1400
     #define WINDOW_HEIGHT 800
-    #define WINDOW_TITLE L"Tiny Renderer"
+    #define WINDOW_TITLE L"Moonlight Renderer"
     #define SWAP_CHAIN_COUNT 2
     #define FRAME_COUNT 3
 
