@@ -1,5 +1,5 @@
 <h1 align="center">
-  TinyRenderer
+  Moonlight Renderer
 </h1>
 
 **This is a realtime renderer written with cpp 17 and dx12, available for Windows.**
@@ -57,7 +57,7 @@
 
 # 🔧Build
 - You need Windows 10 and Visual Studio 2022 (maybe lower version is work fine too)
-- Double click **TinyRenderer.sln**
+- Double click **MoonlightRenderer.sln**
 
 # 🚀Quick Start
 - Take a look at ***./config.json***, set **SceneFile** to specity the scene to render.
